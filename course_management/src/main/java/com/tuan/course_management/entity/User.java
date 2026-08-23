@@ -18,7 +18,7 @@ import java.util.List;
 @Builder
 @ToString(exclude = {"courses", "enrollments", "reviews"})
 
-public class Users {
+public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -51,11 +51,11 @@ public class Users {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "teacher", fetch = FetchType.LAZY)
-    private List<Courses> courses = new ArrayList<>();
+    private List<Course> courses = new ArrayList<>();
 
     @OneToMany(mappedBy = "student", fetch = FetchType.LAZY)
-    private List<Enrollments> enrollments = new ArrayList<>();
+    private List<Enrollment> enrollments = new ArrayList<>();
 
     @OneToMany(mappedBy = "student", fetch = FetchType.LAZY)
-    private List<Reviews> reviews = new ArrayList<>();
+    private List<Review> reviews = new ArrayList<>();
 }

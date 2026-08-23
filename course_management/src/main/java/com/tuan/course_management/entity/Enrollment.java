@@ -6,40 +6,40 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
-@Table(name = "lesson_progress")
+@Table(name = "enrollments")
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@ToString(exclude = {"enrollment", "lesson"})
-public class LessonProgress {
+@ToString(exclude = {"student", "course", "progressList"})
+public class Enrollment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "enrollment_id", nullable = false)
-    private Enrollment enrollment;
+    @JoinColumn(name = "student_id", nullable = false)
+    private User student;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "lesson_id")
-    private Lesson lesson;
-
-    @Column(name = "is_completed", nullable = false)
-    private boolean isCompleted = false;
-
-    @Column(name = "completed_at", nullable = false)
-    private LocalDateTime completedAt;
+    @JoinColumn(name = "course_id", nullable = false)
+    private Course course;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime enrolledAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "update_at")
     private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "enrollment", fetch = FetchType.LAZY)
+    private List<LessonProgress> progressList = new ArrayList<>();
+
 }

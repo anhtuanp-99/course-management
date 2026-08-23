@@ -17,7 +17,7 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 @ToString(exclude = {"enrollments", "lessons", "reviews"})
-public class Courses {
+public class Course {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,7 +31,7 @@ public class Courses {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "teacher_id", nullable = false)
-    private Users teacher;
+    private User teacher;
 
     @Column(nullable = false, length = 20)
     private String status; // DRAFT, PUBLISHED, ARCHIVED
@@ -45,11 +45,11 @@ public class Courses {
     private LocalDateTime updateAt;
 
     @OneToMany(mappedBy = "course", fetch = FetchType.LAZY)
-    private List<Enrollments> enrollments = new ArrayList<>();
+    private List<Enrollment> enrollments = new ArrayList<>();
 
     @OneToMany(mappedBy = "course", fetch = FetchType.LAZY)
-    private List<Lessons> lessons = new ArrayList<>();
+    private List<Lesson> lessons = new ArrayList<>();
 
     @OneToMany(mappedBy = "course", fetch = FetchType.LAZY)
-    private List<Reviews> reviews = new ArrayList<>();
+    private List<Review> reviews = new ArrayList<>();
 }

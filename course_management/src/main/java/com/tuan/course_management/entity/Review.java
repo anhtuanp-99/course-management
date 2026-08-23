@@ -8,38 +8,38 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "lesson_progress")
+@Table(name = "reviews")
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@ToString(exclude = {"enrollment", "lesson"})
-public class LessonProgress {
+@ToString(exclude = {"course","student"})
+public class Review {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "enrollment_id", nullable = false)
-    private Enrollment enrollment;
+    @JoinColumn(name = "course_id", nullable = false)
+    private Course course;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "lesson_id")
-    private Lesson lesson;
+    @JoinColumn(name = "student_id", nullable = false)
+    private User student;
 
-    @Column(name = "is_completed", nullable = false)
-    private boolean isCompleted = false;
+    @Column(nullable = false)
+    private Integer rating; // 1-5
 
-    @Column(name = "completed_at", nullable = false)
-    private LocalDateTime completedAt;
+    @Column(columnDefinition = "TEXT")
+    private String comment;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 }
