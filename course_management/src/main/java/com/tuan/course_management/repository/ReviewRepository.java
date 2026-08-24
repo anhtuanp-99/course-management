@@ -4,6 +4,8 @@ import com.tuan.course_management.entity.Review;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
@@ -32,5 +34,6 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     /**
      * Tính trung bình rating của một khóa học.
      */
-    Double avgRatingByCourseId(Long courseId);
+    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.course.id = :courseId")
+    Double avgRatingByCourseId(@Param("courseId") Long courseId);
 }

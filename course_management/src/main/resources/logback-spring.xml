@@ -40,9 +40,9 @@
 
     <!-- Cấu hình theo Profile DEV -->
     <springProfile name="dev">
-        <logger name="com.tuan.course_management" level="DEBUG"/>
-        <logger name="org.hibernate.SQL" level="DEBUG"/>
-        <logger name="org.hibernate.orm.jdbc.bind" level="TRACE"/>
+        <logger name="com.tuan.course_management" level="INFO"/>
+        <logger name="org.hibernate.SQL" level="WARN"/>
+<!--        <logger name="org.hibernate.orm.jdbc.bind" level="TRACE"/>-->
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="ASYNC_FILE"/>
