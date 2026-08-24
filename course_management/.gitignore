@@ -49,10 +49,15 @@ logs/
 hs_err_pid*
 replay_pid*
 
-### Sensitive config - QUAN TRỌNG ###
-application.properties
-application-local.properties
-application-secret.properties
+### Sensitive config - ĐÃ SỬA CHUẨN ###
+# Giữ lại application.properties và application-dev.properties gốc
+!src/main/resources/application.properties
+!src/main/resources/application-dev.properties
+!src/main/resources/application-prod.properties
+
+# Bỏ qua các file cấu hình bí mật / cá nhân hóa
+src/main/resources/application-local.properties
+src/main/resources/application-secret.properties
 .env
 .env.local
 *.env
