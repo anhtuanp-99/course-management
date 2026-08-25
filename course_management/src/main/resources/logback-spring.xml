@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-    <!-- Định dạng hiển thị -->
+    <!-- Định dạng hiển thị: Console có màu, File chỉ lưu chuỗi thuần -->
     <property name="CONSOLE_PATTERN"
               value="%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) [%thread] %cyan(%logger{36}) - %msg%n"/>
     <property name="FILE_PATTERN"
               value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"/>
 
+    <!-- Đường dẫn lưu trữ tập tin log -->
     <property name="LOG_PATH" value="./logs"/>
     <property name="LOG_FILE" value="${LOG_PATH}/course-management"/>
 
-    <!-- Appender Console (Có màu) -->
+    <!-- 1. Appender in ra màn hình Console (IntelliJ) -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>${CONSOLE_PATTERN}</pattern>
@@ -18,7 +19,7 @@
         </encoder>
     </appender>
 
-    <!-- Appender File (Tự động xoay vòng nén file) -->
+    <!-- 2. Appender ghi ra File (Ghi đè xoay vòng theo ngày và dung lượng) -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_FILE}.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
@@ -32,34 +33,43 @@
         </encoder>
     </appender>
 
-    <!-- Appender Async (Tối ưu hiệu năng ghi file) -->
+    <!-- 3. Appender Bất đồng bộ (Async) - Giúp ghi file không cản trở luồng ứng dụng -->
     <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
         <queueSize>256</queueSize>
         <appender-ref ref="FILE"/>
     </appender>
 
-    <!-- Cấu hình theo Profile DEV -->
+    <!-- ======================================================== -->
+    <!-- Cấu hình Profile DEV   -->
+    <!-- ======================================================== -->
     <springProfile name="dev">
+        <!-- Code dự án: Chỉ log INFO/WARN/ERROR (Gọn gàng, dễ đọc) -->
         <logger name="com.tuan.course_management" level="INFO"/>
+
+        <!-- Tắt toàn bộ log SQL chi tiết và bind parameter của Hibernate -->
         <logger name="org.hibernate.SQL" level="WARN"/>
-<!--        <logger name="org.hibernate.orm.jdbc.bind" level="TRACE"/>-->
+        <logger name="org.hibernate.orm.jdbc.bind" level="WARN"/>
+
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="ASYNC_FILE"/>
         </root>
     </springProfile>
 
-    <!-- Cấu hình theo Profile PROD -->
+    <!-- ======================================================== -->
+    <!-- Cấu hình Profile PROD  -->
+    <!-- ======================================================== -->
     <springProfile name="prod">
         <logger name="com.tuan.course_management" level="INFO"/>
         <logger name="org.hibernate.SQL" level="WARN"/>
+
         <root level="WARN">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="ASYNC_FILE"/>
         </root>
     </springProfile>
 
-    <!-- Mặc định nếu không match profile nào -->
+    <!-- Cấu hình Mặc định (Nếu không truyền active profile) -->
     <springProfile name="!dev &amp; !prod">
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
