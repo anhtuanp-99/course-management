@@ -19,7 +19,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.awt.*;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -53,20 +52,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = getTokenFromRequest(request);
 
             if (StringUtils.hasText(token)) {
+
                 log.debug("Nhận token từ Header: {}", token.substring(0, Math.min(token.length(), 10)) + "...");
+
+                jwtProvider.validateToken(token);
+                String email = jwtProvider.getEmailFromToken(token);
+
+                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+
+                UsernamePasswordAuthenticationToken authenticationToken =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                log.debug("Xác thực thành công cho email: {}", email);
             }
 
-            jwtProvider.validateToken(token);
-            String email = jwtProvider.getEmailFromToken(token);
+            filterChain.doFilter(request, response);
 
-            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-
-            UsernamePasswordAuthenticationToken authenticationToken =
-                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-            authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-            log.debug("Xác thực thành công cho email: {}", email);
         } catch (ExpiredJwtException e) {
             log.warn("Token hết hạn: {}", e.getMessage());
             handleJwtException(response, "Token đã hết hạn. Vui lòng đăng nhập lại.", HttpServletResponse.SC_UNAUTHORIZED);

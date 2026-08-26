@@ -6,34 +6,55 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entity thông báo.
+ * Lưu thông báo gửi đến người dùng (có thể là thông báo chung hoặc cá nhân).
+ */
 @Entity
 @Table(name = "notifications")
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
-@ToString(exclude = "user")
+@ToString
 public class Notification {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @Column(nullable = false, length = 255)
+    /**
+     * Tiêu đề thông báo.
+     */
+    @Column(nullable = false, length = 200)
     private String title;
 
+    /**
+     * Nội dung thông báo.
+     */
     @Column(columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "is_read", nullable = false)
-    private boolean isRead;
+    /**
+     * Người nhận thông báo.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    @ToString.Exclude
+    private User user;
 
+    /**
+     * Trạng thái đã đọc: true = đã đọc, false = chưa đọc.
+     */
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean isRead = false;
+
+    /**
+     * Thời điểm tạo thông báo.
+     */
     @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @Column(updatable = false)
     private LocalDateTime createdAt;
 }
