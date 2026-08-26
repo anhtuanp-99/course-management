@@ -2,13 +2,16 @@ package com.tuan.course_management.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
+/**
+ * DTO nhận dữ liệu từ request đăng nhập.
+ */
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class LoginRequest {
 
     @NotBlank(message = "Email không được để trống")
@@ -17,5 +20,4 @@ public class LoginRequest {
 
     @NotBlank(message = "Mật khẩu không được để trống")
     private String password;
-
 }

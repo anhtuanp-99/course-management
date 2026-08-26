@@ -3,18 +3,19 @@ package com.tuan.course_management.dto.request;
 import com.tuan.course_management.enums.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
 /**
- * DTO nhận dữ liệu tạo mới người dùng (thường dùng cho đăng ký).
+ * DTO dùng cho ADMIN tạo mới người dùng.
  */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RegisterRequest {
+public class CreateUserRequest {
 
     @NotBlank(message = "Họ tên không được để trống")
     @Size(max = 100, message = "Họ tên không quá 100 ký tự")
@@ -28,6 +29,12 @@ public class RegisterRequest {
     @Size(min = 6, message = "Mật khẩu tối thiểu 6 ký tự")
     private String password;
 
-    // Vai trò mặc định nếu không truyền là STUDENT
-    private Role role = Role.STUDENT;
+    @NotNull(message = "Vai trò không được để trống")
+    private Role role;
+
+    // Nếu không truyền isActive, mặc định true
+    private Boolean isActive = true;
+
+    @Size(max = 20, message = "Số điện thoại không quá 20 ký tự")
+    private String phone;
 }
