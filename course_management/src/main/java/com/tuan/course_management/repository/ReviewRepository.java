@@ -4,36 +4,34 @@ import com.tuan.course_management.entity.Review;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
+/**
+ * Repository thao tác với bảng reviews.
+ * - JpaRepository: cung cấp CRUD và phân trang.
+ */
+@Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     /**
-     * Lấy đánh giá của một student cho một khóa học cụ thể.
-     */
-    Optional<Review> findByCourseIdAndStudentId(Long courseId, Long studentId);
-
-    /**
-     * Lấy danh sách đánh giá của một khóa học (có phân trang).
+     * Lấy danh sách đánh giá của một khóa học, có phân trang.
      */
     Page<Review> findByCourseId(Long courseId, Pageable pageable);
 
     /**
-     * Lấy danh sách đánh giá của một student (có phân trang).
+     * Lấy danh sách đánh giá của một học viên, có phân trang.
      */
     Page<Review> findByStudentId(Long studentId, Pageable pageable);
 
     /**
-     * Đếm số đánh giá của một khóa học.
+     * Kiểm tra học viên đã đánh giá khóa học hay chưa.
      */
-    long countByCourseId(Long courseId);
+    boolean existsByStudentIdAndCourseId(Long studentId, Long courseId);
 
     /**
-     * Tính trung bình rating của một khóa học.
+     * Tìm đánh giá của học viên đối với khóa học cụ thể.
      */
-    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.course.id = :courseId")
-    Double avgRatingByCourseId(@Param("courseId") Long courseId);
+    Optional<Review> findByStudentIdAndCourseId(Long studentId, Long courseId);
 }

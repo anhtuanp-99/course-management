@@ -29,7 +29,6 @@ public class Review {
 
     /**
      * Số sao đánh giá (1-5).
-     * Validation sẽ được thực hiện ở tầng DTO.
      */
     @Column(nullable = false)
     private int rating;
@@ -42,7 +41,6 @@ public class Review {
 
     /**
      * Học viên viết đánh giá.
-     * Quan hệ nhiều đánh giá - một học viên.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
@@ -51,7 +49,6 @@ public class Review {
 
     /**
      * Khóa học được đánh giá.
-     * Quan hệ nhiều đánh giá - một khóa học.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_id", nullable = false)

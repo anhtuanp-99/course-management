@@ -4,23 +4,22 @@ import com.tuan.course_management.entity.Notification;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
+/**
+ * Repository thao tác với bảng notifications.
+ */
 @Repository
-public interface NotificationRepository extends JpaRepository<Notification, Long> {
+public interface NotificationRepository extends JpaRepository<Notification, Long>, JpaSpecificationExecutor<Notification> {
 
     /**
-     * Lấy danh sách thông báo của một user (có phân trang).
+     * Lấy danh sách thông báo của một người dùng, có phân trang.
      */
-    Page<Notification> findByUser(Long userId, Pageable pageable);
+    Page<Notification> findByUserId(Long userId, Pageable pageable);
 
     /**
-     * Lấy danh sách thông báo chưa đọc của một user.
+     * Lấy danh sách thông báo chung (không gắn user cụ thể), có phân trang.
      */
-    Page<Notification> findByUserAndIsReadFalse(Long userId, Pageable pageable);
-
-    /**
-     * Đếm số thông báo chưa đọc của một user.
-     */
-    long countByUserIdAndIsReadFalse(Long userId);
+    Page<Notification> findByUserIsNull(Pageable pageable);
 }

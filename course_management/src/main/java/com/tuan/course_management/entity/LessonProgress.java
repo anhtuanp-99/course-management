@@ -29,7 +29,6 @@ public class LessonProgress {
 
     /**
      * Enrollment tương ứng (học viên đã đăng ký khóa học nào).
-     * Quan hệ nhiều tiến độ - một enrollment.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "enrollment_id", nullable = false)

@@ -61,7 +61,6 @@ public class Lesson {
 
     /**
      * Danh sách tiến độ của học viên đối với bài học này.
-     * Mỗi LessonProgress đánh dấu một học viên đã hoàn thành bài học hay chưa.
      */
     @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default

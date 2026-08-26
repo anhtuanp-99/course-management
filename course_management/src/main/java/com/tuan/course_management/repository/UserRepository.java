@@ -1,36 +1,45 @@
 package com.tuan.course_management.repository;
 
 import com.tuan.course_management.entity.User;
+import com.tuan.course_management.enums.Role;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
+/**
+ * Repository thao tác với bảng users.
+ * - JpaRepository: cung cấp CRUD và phân trang cơ bản.
+ * - JpaSpecificationExecutor: hỗ trợ truy vấn động (Specification) kết hợp Pageable.
+ */
 @Repository
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
 
-    // Tìm user theo email (dùng cho login)
+    /**
+     * Tìm người dùng theo email (dùng cho đăng nhập).
+     */
     Optional<User> findByEmail(String email);
 
-    // Kiểm tra email đã tồn tại chưa (dùng cho register)
+    /**
+     * Kiểm tra email đã tồn tại hay chưa.
+     */
     boolean existsByEmail(String email);
 
     /**
-     * Lấy danh sách user có phân trang và lọc theo role.
-     * @param role ADMIN, TEACHER, STUDENT (có thể null)
-     * @param pageable thông tin phân trang
-     * @return Page<User>
+     * Lấy danh sách người dùng theo vai trò, có phân trang.
      */
-    @Query("SELECT u FROM User u WHERE (:role IS NULL or u.role = :role)")
-    Page<User> findByRole(@Param("role") String role, Pageable pageable);
-
+    Page<User> findByRole(Role role, Pageable pageable);
 
     /**
-     * Lấy danh sách user theo trạng thái active/inactive.
+     * Lấy danh sách người dùng theo trạng thái hoạt động, có phân trang.
      */
-    Page<User> findByIsActive(Boolean isActive, Pageable pageable);
+    Page<User> findByIsActive(boolean isActive, Pageable pageable);
+
+    /**
+     * Lấy danh sách người dùng theo vai trò và trạng thái, có phân trang.
+     */
+    Page<User> findByRoleAndIsActive(Role role, boolean isActive, Pageable pageable);
 }

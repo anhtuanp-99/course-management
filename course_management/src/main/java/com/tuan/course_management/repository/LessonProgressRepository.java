@@ -7,27 +7,24 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Repository thao tác với bảng lesson_progress.
+ */
 @Repository
 public interface LessonProgressRepository extends JpaRepository<LessonProgress, Long> {
 
     /**
-     * Lấy tiến độ của một bài học trong một đăng ký cụ thể.
-     */
-    Optional<LessonProgress> findByEnrollmentIdAndLessonId(Long enrollmentId, Long lessonId);
-
-    /**
-     * Lấy tất cả tiến độ của một đăng ký.
+     * Lấy danh sách tiến độ bài học của một enrollment (không cần phân trang).
      */
     List<LessonProgress> findByEnrollmentId(Long enrollmentId);
 
     /**
-     * Đếm số bài đã hoàn thành trong một đăng ký.
+     * Kiểm tra xem một bài học đã được đánh dấu hoàn thành trong một enrollment chưa.
      */
-    long countByEnrollmentIdAndIsCompletedTrue(Long enrollmentId);
+    boolean existsByEnrollmentIdAndLessonId(Long enrollmentId, Long lessonId);
 
     /**
-     * Đếm số lượng bài học đã được khởi tạo tiến độ trong một lượt đăng ký.
+     * Tìm tiến độ của một bài học cụ thể trong một enrollment.
      */
-    long countByEnrollmentId(Long enrollmentId);
-
+    Optional<LessonProgress> findByEnrollmentIdAndLessonId(Long enrollmentId, Long lessonId);
 }
