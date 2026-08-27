@@ -1,0 +1,109 @@
+course_management/
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/tuan/course_management/
+│   │   │       ├── CourseManagementApplication.java
+│   │   │       ├── config/
+│   │   │       │   └── SecurityConfig.java
+│   │   │       ├── controller/
+│   │   │       │   ├── AuthController.java
+│   │   │       │   ├── UserController.java
+│   │   │       │   ├── CourseController.java
+│   │   │       │   ├── LessonController.java
+│   │   │       │   ├── EnrollmentController.java
+│   │   │       │   ├── NotificationController.java
+│   │   │       │   ├── ReviewController.java
+│   │   │       │   └── ReportController.java
+│   │   │       ├── dto/
+│   │   │       │   ├── request/
+│   │   │       │   │   ├── LoginRequest.java
+│   │   │       │   │   ├── RegisterRequest.java
+│   │   │       │   │   ├── CreateUserRequest.java
+│   │   │       │   │   ├── UpdateUserRequest.java
+│   │   │       │   │   ├── UpdateRoleRequest.java
+│   │   │       │   │   ├── UpdateStatusRequest.java
+│   │   │       │   │   ├── ChangePasswordRequest.java
+│   │   │       │   │   ├── CourseRequest.java
+│   │   │       │   │   ├── UpdateCourseStatusRequest.java
+│   │   │       │   │   ├── LessonRequest.java
+│   │   │       │   │   ├── EnrollmentRequest.java
+│   │   │       │   │   ├── NotificationRequest.java
+│   │   │       │   │   └── ReviewRequest.java
+│   │   │       │   └── response/
+│   │   │       │       ├── ApiResponse.java
+│   │   │       │       ├── JwtResponse.java
+│   │   │       │       ├── PageResponse.java
+│   │   │       │       ├── UserResponse.java
+│   │   │       │       ├── CourseResponse.java
+│   │   │       │       ├── CourseDetailResponse.java
+│   │   │       │       ├── LessonResponse.java
+│   │   │       │       ├── EnrollmentResponse.java
+│   │   │       │       ├── EnrollmentDetailResponse.java
+│   │   │       │       ├── NotificationResponse.java
+│   │   │       │       ├── ReviewResponse.java
+│   │   │       │       └── report/
+│   │   │       │           ├── TopCourseResponse.java
+│   │   │       │           ├── StudentProgressResponse.java
+│   │   │       │           └── TeacherOverviewResponse.java
+│   │   │       ├── entity/
+│   │   │       │   ├── User.java
+│   │   │       │   ├── Course.java
+│   │   │       │   ├── Lesson.java
+│   │   │       │   ├── Enrollment.java
+│   │   │       │   ├── LessonProgress.java
+│   │   │       │   ├── Notification.java
+│   │   │       │   └── Review.java
+│   │   │       ├── enums/
+│   │   │       │   ├── Role.java
+│   │   │       │   └── CourseStatus.java
+│   │   │       ├── exception/
+│   │   │       │   ├── GlobalExceptionHandler.java
+│   │   │       │   ├── ResourceNotFoundException.java
+│   │   │       │   ├── BadRequestException.java
+│   │   │       │   ├── UnauthorizedException.java
+│   │   │       │   └── ForbiddenException.java
+│   │   │       ├── mapper/
+│   │   │       │   ├── UserMapper.java
+│   │   │       │   ├── CourseMapper.java
+│   │   │       │   ├── LessonMapper.java
+│   │   │       │   ├── EnrollmentMapper.java
+│   │   │       │   ├── NotificationMapper.java
+│   │   │       │   └── ReviewMapper.java
+│   │   │       ├── repository/
+│   │   │       │   ├── UserRepository.java
+│   │   │       │   ├── CourseRepository.java
+│   │   │       │   ├── LessonRepository.java
+│   │   │       │   ├── EnrollmentRepository.java
+│   │   │       │   ├── LessonProgressRepository.java
+│   │   │       │   ├── NotificationRepository.java
+│   │   │       │   └── ReviewRepository.java
+│   │   │       ├── security/
+│   │   │       │   ├── CustomUserDetailsService.java
+│   │   │       │   ├── JwtAuthenticationEntryPoint.java
+│   │   │       │   ├── JwtAuthenticationFilter.java
+│   │   │       │   ├── JwtProvider.java
+│   │   │       │   └── UserPrincipal.java
+│   │   │       ├── service/
+│   │   │       │   ├── AuthService.java
+│   │   │       │   ├── UserService.java
+│   │   │       │   ├── CourseService.java
+│   │   │       │   ├── LessonService.java
+│   │   │       │   ├── EnrollmentService.java
+│   │   │       │   ├── NotificationService.java
+│   │   │       │   ├── ReviewService.java
+│   │   │       │   └── ReportService.java
+│   │   │       └── util/
+│   │   │           └── PageUtils.java
+│   │   └── resources/
+│   │       ├── application.properties
+│   │       ├── application-dev.properties
+│   │       ├── application-local.properties
+│   │       └── logback-spring.xml
+│   └── test/
+│       └── java/
+│           └── com/tuan/course_management/
+│               └── CourseManagementApplicationTests.java
+├── build.gradle
+├── settings.gradle
+└── .gitignore
