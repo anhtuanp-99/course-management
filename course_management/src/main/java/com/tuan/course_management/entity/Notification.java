@@ -11,7 +11,9 @@ import java.time.LocalDateTime;
  * Lưu thông báo gửi đến người dùng (có thể là thông báo chung hoặc cá nhân).
  */
 @Entity
-@Table(name = "notifications")
+@Table(name = "notifications", indexes = {
+        @Index(name = "idx_notification_user_id", columnList = "user_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -49,7 +51,7 @@ public class Notification {
      */
     @Builder.Default
     @Column(nullable = false)
-    private boolean isRead = false;
+    private boolean read = false;
 
     /**
      * Thời điểm tạo thông báo.

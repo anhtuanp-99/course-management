@@ -44,8 +44,9 @@ public class User {
     @Column(length = 20)
     private String phone;
 
+    @Builder.Default
     @Column(nullable = false)
-    private Boolean isActive;
+    private boolean isActive = true;
 
     @CreationTimestamp
     @Column(updatable = false)

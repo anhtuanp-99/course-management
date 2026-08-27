@@ -42,7 +42,7 @@ public class Lesson {
      */
     @Builder.Default
     @Column(nullable = false)
-    private boolean isPublished = false;
+    private boolean published = false;
 
     @CreationTimestamp
     @Column(updatable = false)

@@ -14,7 +14,8 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "lesson_progress",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"enrollment_id", "lesson_id"}))
+        uniqueConstraints = @UniqueConstraint(name = "uk_lesson_progress_enrollment_lesson",
+                columnNames = {"enrollment_id", "lesson_id"}))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -58,6 +59,4 @@ public class LessonProgress {
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
 }
