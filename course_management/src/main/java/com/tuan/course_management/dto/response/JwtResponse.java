@@ -1,24 +1,27 @@
 package com.tuan.course_management.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-
-@Data
+/**
+ * Response trả về sau khi đăng nhập thành công.
+ * Chứa cặp token (Access/Refresh) và thông tin cơ bản của người dùng.
+ */
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class JwtResponse {
+
     private String accessToken;
     private String refreshToken;
-    private String tokenType = "Bearer";
-    private String email;
-    private String role;
 
-    public JwtResponse(String accessToken, String refreshToken, String email, String role) {
-        this.accessToken = accessToken;
-        this.refreshToken = refreshToken;
-        this.email = email;
-        this.role = role;
-    }
+    @Builder.Default
+    private String tokenType = "Bearer";
+
+    // Thông tin người dùng cần thiết cho Frontend hiển thị UI
+    private Long userId;
+    private String email;
+    private String fullName;
+    private String role;
 }

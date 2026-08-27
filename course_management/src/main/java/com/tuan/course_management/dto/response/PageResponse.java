@@ -1,34 +1,39 @@
 package com.tuan.course_management.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
 
-@Data
-@Builder
+/**
+ * DTO chứa dữ liệu phân trang.
+ * Dùng chung cho tất cả API trả về danh sách có phân trang.
+ */
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class PageResponse<T> {
 
-    private List<T> items;
-    private int page;
-    private int size;
-    private long totalItems;
-    private int totalPages;
-    private boolean isLast;
+    private List<T> content;      // Danh sách dữ liệu trang hiện tại
+    private int page;            // Số trang hiện tại (0-based)
+    private int size;            // Kích thước trang
+    private long totalElements;  // Tổng số phần tử
+    private int totalPages;      // Tổng số trang
+    private boolean last;        // Có phải trang cuối không
 
-    public static <T> PageResponse<T> fromPage(Page<T> page) {
+    /**
+     * Chuyển đổi từ đối tượng Page của Spring Data sang PageResponse.
+     */
+    public static <T> PageResponse<T> from(Page<T> pageData) {
         return PageResponse.<T>builder()
-                .items(page.getContent())
-                .page(page.getNumber())
-                .size(page.getSize())
-                .totalItems(page.getTotalElements())
-                .totalPages(page.getTotalPages())
-                .isLast(page.isLast())
+                .content(pageData.getContent())
+                .page(pageData.getNumber())
+                .size(pageData.getSize())
+                .totalElements(pageData.getTotalElements())
+                .totalPages(pageData.getTotalPages())
+                .last(pageData.isLast())
                 .build();
     }
 }

@@ -4,6 +4,7 @@ import com.tuan.course_management.dto.request.LoginRequest;
 import com.tuan.course_management.dto.request.RegisterRequest;
 import com.tuan.course_management.dto.response.ApiResponse;
 import com.tuan.course_management.dto.response.JwtResponse;
+import com.tuan.course_management.enums.Role;
 import com.tuan.course_management.security.JwtProvider;
 import com.tuan.course_management.security.UserPrincipal;
 import com.tuan.course_management.service.AuthService;
@@ -57,17 +58,26 @@ public class AuthController {
         // 2. Lấy thông tin user
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
         String email = principal.getUsername();
-        String role = principal.getUser().getRole();
+        Role role = principal.getUser().getRole();
+        Long userId = principal.getUser().getId();
+        String fullName = principal.getUser().getFullName();
 
         // 3. Tạo token
-        String accessToken = jwtProvider.generateToken(authentication);
+        String  accessToken = jwtProvider.generateToken(authentication);
         String refreshToken = jwtProvider.generateRefreshToken(email);
 
         log.info("Đăng nhập thành công cho email: {}", email);
 
         // 4. Trả về response
-        JwtResponse response = new JwtResponse(accessToken, refreshToken, email, role);
-        return ResponseEntity.ok(ApiResponse.success(response, "Đăng nhập thành công"));
+        JwtResponse response = JwtResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .userId(userId)
+                .email(email)
+                .fullName(fullName)
+                .role(role.name())
+                .build();
+        return ResponseEntity.ok(ApiResponse.success("Đăng nhập thành công", response));
 
     }
 }

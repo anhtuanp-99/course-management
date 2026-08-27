@@ -15,7 +15,9 @@ import java.util.List;
  */
 @Entity
 @Table(name = "enrollments",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"student_id", "course_id"}))
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_enrollments_student_course",
+                columnNames = {"student_id", "course_id"}))
 @Getter
 @Setter
 @NoArgsConstructor

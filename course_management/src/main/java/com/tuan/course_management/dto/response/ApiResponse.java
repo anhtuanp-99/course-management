@@ -1,42 +1,48 @@
 package com.tuan.course_management.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.*;
 
-@Data
-@Builder
-@AllArgsConstructor
+/**
+ * Response chuẩn cho tất cả API.
+ * - success: trạng thái thành công hay thất bại.
+ * - message: thông điệp mô tả (thường dùng cho lỗi).
+ * - data: dữ liệu trả về (có thể là object, list, page...).
+ * - JsonInclude NON_NULL để không hiển thị field null.
+ */
+@Getter
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiResponse<T> {
 
-    private String status;
+    private boolean success;
     private String message;
     private T data;
 
-    public static <T> ApiResponse<T> success(T data, String message) {
+    // Factory method tạo response thành công
+    public static <T> ApiResponse<T> success(T data) {
         return ApiResponse.<T>builder()
-                .status("SUCCESS")
+                .success(true)
+                .data(data)
+                .build();
+    }
+
+    public static <T> ApiResponse<T> success(String message, T data) {
+        return ApiResponse.<T>builder()
+                .success(true)
                 .message(message)
                 .data(data)
                 .build();
     }
 
-    public static <T> ApiResponse<T> success(String message) {
-        return success(null, message);
-    }
-
-    public static <T> ApiResponse<T> error(T data, String message) {
-        return ApiResponse.<T>builder()
-                .status("FAIL")
-                .message(message)
-                .data(data)
-                .build();
-    }
-
+    // Factory method tạo response thất bại
     public static <T> ApiResponse<T> error(String message) {
-        return error(null, message);
+        return ApiResponse.<T>builder()
+                .success(false)
+                .message(message)
+                .build();
     }
-
 }
