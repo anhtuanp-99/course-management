@@ -1,6 +1,5 @@
 package com.tuan.course_management.dto.response;
 
-import com.tuan.course_management.entity.LessonProgress;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -19,7 +18,7 @@ public class EnrollmentDetailResponse {
     private Long id;
     private Long studentId;
     private Long courseId;
-    private String courseTitle;   // tên khóa học (đã map)
+    private String courseTitle;
     private LocalDateTime enrolledAt;
-    private List<LessonProgressResponse> lessonProgresses;
+    private List<LessonProgressResponse> progress; // danh sách tiến độ bài học
 }

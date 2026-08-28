@@ -14,11 +14,8 @@ import java.time.LocalDateTime;
 @Builder
 public class LessonProgressResponse {
 
-    private Long id;
-    private Long enrollmentId;
     private Long lessonId;
+    private String lessonTitle;
     private boolean completed;
     private LocalDateTime completedAt;
-    private LocalDateTime updatedAt;
-
 }

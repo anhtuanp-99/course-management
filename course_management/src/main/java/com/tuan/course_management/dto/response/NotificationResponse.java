@@ -18,6 +18,6 @@ public class NotificationResponse {
     private String title;
     private String content;
     private Long userId;       // null nếu là thông báo chung
-    private boolean isRead;
+    private boolean read;
     private LocalDateTime createdAt;
 }
