@@ -36,10 +36,10 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
     /**
      * Lấy danh sách người dùng theo trạng thái hoạt động, có phân trang.
      */
-    Page<User> findByIsActive(boolean isActive, Pageable pageable);
+    Page<User> findByActive(boolean active, Pageable pageable);
 
     /**
      * Lấy danh sách người dùng theo vai trò và trạng thái, có phân trang.
      */
-    Page<User> findByRoleAndIsActive(Role role, boolean isActive, Pageable pageable);
+    Page<User> findByRoleAndActive(Role role, boolean isActive, Pageable pageable);
 }
