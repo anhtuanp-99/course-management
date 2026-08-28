@@ -3,17 +3,16 @@ package com.tuan.course_management.security;
 import com.tuan.course_management.entity.User;
 import com.tuan.course_management.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
- * CustomUserDetailsService – Cầu nối giữa Database và Spring Security.
- * Lý do tạo: Spring Security không biết cấu trúc bảng User, cần một service để tải user từ DB.
+ * CustomUserDetailsService implements UserDetailsService.
+ * Phục vụ riêng cho quá trình Xác thực Mật khẩu khi Đăng nhập (AuthenticationManager).
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
@@ -21,19 +20,11 @@ public class CustomUserDetailsService implements UserDetailsService {
     private final UserRepository userRepository;
 
     @Override
+    @Transactional(readOnly = true) // Tối ưu hiệu năng đọc cho Hibernate
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-
-        log.debug("Tải user từ DB với email: {}", email);
-
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> {
-                    log.warn("Không tìm thấy user với email: {}", email);
-                    return new UsernameNotFoundException("Không tìm thấy user với email: " + email);
-                });
+                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng với email: " + email));
 
-        log.debug("Tải user thành công: {}", user.getEmail());
-        return UserPrincipal.create(user);
+        return UserPrincipal.from(user);
     }
-
-
 }
