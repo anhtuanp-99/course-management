@@ -13,6 +13,6 @@ import lombok.*;
 @Builder
 public class UpdateStatusRequest {
 
-    @NotNull(message = "Trạng thái isActive không được để trống")
-    private Boolean isActive;
+    @NotNull(message = "Trạng thái active không được để trống")
+    private Boolean active;
 }

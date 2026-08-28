@@ -21,5 +21,5 @@ public interface LessonRepository extends JpaRepository<Lesson, Long>, JpaSpecif
     /**
      * Lấy danh sách bài học đã publish của một khóa học, có phân trang.
      */
-    Page<Lesson> findByCourseIdAndIsPublishedTrue(Long courseId, Pageable pageable);
+    Page<Lesson> findByCourseIdAndPublishedTrue(Long courseId, Pageable pageable);
 }
