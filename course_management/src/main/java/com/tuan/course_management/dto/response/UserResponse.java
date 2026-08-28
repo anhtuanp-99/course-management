@@ -20,7 +20,7 @@ public class UserResponse {
     private String email;
     private String phone;
     private Role role;
-    private boolean isActive;
+    private boolean active;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
