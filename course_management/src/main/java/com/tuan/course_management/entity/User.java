@@ -40,7 +40,7 @@ public class User {
     @Comment("Email dùng để đăng nhập (Unique)")
     private String email;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     @Comment("Mật khẩu đã được mã hóa BCrypt")
     private String password;
 
@@ -73,14 +73,14 @@ public class User {
     private LocalDateTime updatedAt;
 
     @ToString.Exclude
-    @OneToMany(mappedBy = "teacher", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "teacher")
     private List<Course> courses = new ArrayList<>();
 
     @ToString.Exclude
-    @OneToMany(mappedBy = "student", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "student")
     private List<Enrollment> enrollments = new ArrayList<>();
 
     @ToString.Exclude
-    @OneToMany(mappedBy = "student", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "student")
     private List<Review> reviews = new ArrayList<>();
 }
