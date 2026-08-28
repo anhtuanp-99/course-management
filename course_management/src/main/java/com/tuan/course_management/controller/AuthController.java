@@ -4,8 +4,7 @@ import com.tuan.course_management.dto.request.LoginRequest;
 import com.tuan.course_management.dto.request.RegisterRequest;
 import com.tuan.course_management.dto.response.ApiResponse;
 import com.tuan.course_management.dto.response.JwtResponse;
-import com.tuan.course_management.enums.Role;
-import com.tuan.course_management.security.JwtProvider;
+import com.tuan.course_management.dto.response.UserResponse;
 import com.tuan.course_management.security.UserPrincipal;
 import com.tuan.course_management.service.AuthService;
 import com.tuan.course_management.service.UserService;
@@ -14,70 +13,64 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
+/**
+ * Controller tiếp nhận và xử lý các Endpoint liên quan đến xác thực và tài khoản.
+ */
 @Slf4j
 @RestController
-@RequestMapping("api/auth")
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final UserService userService;
     private final AuthService authService;
-    private final JwtProvider jwtProvider;
+    private final UserService userService;
 
     /**
-     * POST /api/auth/register – Đăng ký tài khoản mới (public).
+     * Đăng ký tài khoản người dùng mới.
      */
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<String>> register(@Valid @RequestBody RegisterRequest request) {
-        log.info("Nhận yêu cầu đăng kí tài khoản mới với email: {}", request.getEmail());
-
+        log.info("Nhận yêu cầu đăng ký tài khoản cho email: {}", request.getEmail());
         userService.register(request);
-
-        log.info("Đăng kí thành công cho email: {}", request.getEmail());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Đăng kí thành công! Vui lòng đăng nhập"));
+                .body(ApiResponse.success("Đăng ký tài khoản thành công!"));
     }
 
     /**
-     * POST /api/auth/login – Đăng nhập (public).
-     * Trả về Access Token và Refresh Token.
+     * Đăng nhập hệ thống và nhận chuỗi Authentication Token.
      */
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<JwtResponse>> login(@Valid @RequestBody LoginRequest request) {
-        log.info("Nhận yêu cầu đăng nhập với email: {}", request.getEmail());
-
-        // 1. Xác thực
-        Authentication authentication = authService.authenticate(request);
-
-        // 2. Lấy thông tin user
-        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
-        String email = principal.getUsername();
-        Role role = principal.getUser().getRole();
-        Long userId = principal.getUser().getId();
-        String fullName = principal.getUser().getFullName();
-
-        // 3. Tạo token
-        String  accessToken = jwtProvider.generateToken(authentication);
-        String refreshToken = jwtProvider.generateRefreshToken(email);
-
-        log.info("Đăng nhập thành công cho email: {}", email);
-
-        // 4. Trả về response
-        JwtResponse response = JwtResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .userId(userId)
-                .email(email)
-                .fullName(fullName)
-                .role(role.name())
-                .build();
+        log.info("Nhận yêu cầu đăng nhập cho email: {}", request.getEmail());
+        JwtResponse response = authService.login(request);
         return ResponseEntity.ok(ApiResponse.success("Đăng nhập thành công", response));
+    }
 
+    /**
+     * Lấy thông tin tài khoản của người dùng đang đăng nhập.
+     */
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserResponse>> me(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        UserResponse response = authService.getMe(userPrincipal);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    /**
+     * Kiểm tra tính hợp lệ của Token.
+     */
+    @PostMapping("/verify")
+    public ResponseEntity<ApiResponse<Void>> verify(@RequestParam("token") String token) {
+        return ResponseEntity.ok(authService.verify(token));
+    }
+
+    /**
+     * Đăng xuất khỏi hệ thống.
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout() {
+        return ResponseEntity.ok(authService.logout());
     }
 }
