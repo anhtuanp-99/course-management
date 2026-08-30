@@ -20,8 +20,8 @@ public class LessonMapper {
                 .content(lesson.getContent())
                 .isPublished(lesson.isPublished())
                 .courseId(lesson.getCourse() != null ? lesson.getCourse().getId() : null)
-                .createAt(lesson.getCreatedAt())
-                .updateAt(lesson.getUpdatedAt())
+                .createdAt(lesson.getCreatedAt())
+                .updatedAt(lesson.getUpdatedAt())
                 .build();
     }
 }
