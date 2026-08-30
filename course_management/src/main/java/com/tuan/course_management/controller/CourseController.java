@@ -10,12 +10,13 @@ import com.tuan.course_management.enums.CourseStatus;
 import com.tuan.course_management.service.CourseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * Controller xử lý các endpoint liên quan đến khóa học.
+ * Controller quản lý các Endpoint RESTful liên quan đến khóa học.
  */
 @RestController
 @RequestMapping("/api/courses")
@@ -25,7 +26,7 @@ public class CourseController {
     private final CourseService courseService;
 
     /**
-     * Lấy danh sách khóa học (đã đăng nhập).
+     * Lấy danh sách khóa học có phân trang và bộ lọc (yêu cầu đã đăng nhập).
      */
     @GetMapping
     @PreAuthorize("isAuthenticated()")
@@ -38,13 +39,13 @@ public class CourseController {
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
 
-        PageResponse<CourseResponse> response = courseService.getCourses(page, size, sortBy, sortDir,
-                search, teacherId, status);
+        PageResponse<CourseResponse> response = courseService.getCourses(
+                page, size, sortBy, sortDir, search, teacherId, status);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     /**
-     * Lấy chi tiết khóa học (đã đăng nhập).
+     * Lấy chi tiết thông tin khóa học kèm danh sách bài học (yêu cầu đã đăng nhập).
      */
     @GetMapping("/{courseId}")
     @PreAuthorize("isAuthenticated()")
@@ -54,17 +55,19 @@ public class CourseController {
     }
 
     /**
-     * Tạo mới khóa học (ADMIN).
+     * Tạo mới một khóa học (Chỉ ADMIN).
+     * Trả về HTTP Status 201 CREATED theo đúng chuẩn RESTful API.
      */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<CourseResponse>> createCourse(@Valid @RequestBody CourseRequest request) {
         CourseResponse response = courseService.createCourse(request);
-        return ResponseEntity.ok(ApiResponse.success("Tạo khóa học thành công", response));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Tạo khóa học thành công", response));
     }
 
     /**
-     * Cập nhật khóa học (ADMIN).
+     * Cập nhật toàn bộ thông tin khóa học (Chỉ ADMIN).
      */
     @PutMapping("/{courseId}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -76,9 +79,10 @@ public class CourseController {
     }
 
     /**
-     * Cập nhật trạng thái khóa học (ADMIN).
+     * Cập nhật một phần: Trạng thái của khóa học (Chỉ ADMIN).
+     * Sử dụng @PatchMapping đúng chuẩn RESTful cho thao tác partial update.
      */
-    @PutMapping("/{courseId}/status")
+    @PatchMapping("/{courseId}/status")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<CourseResponse>> updateCourseStatus(
             @PathVariable Long courseId,
@@ -88,7 +92,7 @@ public class CourseController {
     }
 
     /**
-     * Xóa khóa học (ADMIN).
+     * Xóa khóa học khỏi hệ thống (Chỉ ADMIN).
      */
     @DeleteMapping("/{courseId}")
     @PreAuthorize("hasRole('ADMIN')")
