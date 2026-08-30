@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Dịch vụ quản lý thông tin người dùng và các nghiệp vụ tài khoản liên quan.
@@ -71,11 +72,19 @@ public class UserService {
      * @param isActive Lọc theo trạng thái tài khoản
      * @return PageResponse Danh sách người dùng dạng DTO phân trang
      */
+    // Danh sách các trường được phép sắp xếp (Whitelist)
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "id", "fullName", "email", "role", "active", "createdAt"
+    );
+
     public PageResponse<UserResponse> getUsers(int page, int size, String sortBy, String sortDir,
                                                Role role, Boolean isActive) {
-        log.debug("Truy vấn danh sách người dùng - Page: {}, Size: {}, Role: {}, Active: {}", page, size, role, isActive);
+        log.debug("Truy vấn danh sách người dùng - Page: {}, Size: {}, SortBy: {}, Active: {}", page, size, sortBy, isActive);
 
-        Pageable pageable = PageUtils.createPageable(page, size, sortBy, sortDir, "createdAt");
+        // Kiểm tra whitelist: Nếu trường sortBy không hợp lệ, tự động gán về "createdAt"
+        String safeSortBy = ALLOWED_SORT_FIELDS.contains(sortBy) ? sortBy : "createdAt";
+
+        Pageable pageable = PageUtils.createPageable(page, size, safeSortBy, sortDir, "createdAt");
 
         Specification<User> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
