@@ -195,7 +195,7 @@ public class CourseService {
             return false;
         }
         return auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_" + Role.ADMIN.name())
+                .anyMatch(a -> a.getAuthority().equals(Role.ADMIN.getAuthority())
                         || a.getAuthority().equals(Role.ADMIN.name()));
     }
 }
