@@ -11,21 +11,28 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entity khóa học.
- * Lưu thông tin khóa học, giảng viên phụ trách, trạng thái và danh sách bài học.
+ * Entity quản lý thông tin khóa học trong hệ thống.
  */
 @Entity
-@Table(name = "courses")
+@Table(
+        name = "courses",
+        indexes = {
+                @Index(name = "idx_courses_teacher_id", columnList = "teacher_id"),
+                @Index(name = "idx_courses_status", columnList = "status")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @ToString
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Course {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @Column(nullable = false, length = 200)
@@ -35,10 +42,10 @@ public class Course {
     private String description;
 
     /**
-     * Giảng viên phụ trách khóa học.
+     * Giảng viên phụ trách khóa học (Bắt buộc phải có).
      */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "teacher_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "teacher_id", nullable = false)
     @ToString.Exclude
     private User teacher;
 
@@ -47,7 +54,8 @@ public class Course {
      */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private CourseStatus status;
+    @Builder.Default
+    private CourseStatus status = CourseStatus.DRAFT;
 
     @CreationTimestamp
     @Column(updatable = false)
@@ -79,4 +87,22 @@ public class Course {
     @Builder.Default
     @ToString.Exclude
     private List<Review> reviews = new ArrayList<>();
+
+    // ================= HELPER METHODS =================
+
+    /**
+     * Thêm bài học mới và đồng bộ mối quan hệ hai chiều.
+     */
+    public void addLesson(Lesson lesson) {
+        this.lessons.add(lesson);
+        lesson.setCourse(this);
+    }
+
+    /**
+     * Xóa bài học khỏi khóa học và đồng bộ mối quan hệ hai chiều.
+     */
+    public void removeLesson(Lesson lesson) {
+        this.lessons.remove(lesson);
+        lesson.setCourse(null);
+    }
 }

@@ -12,24 +12,28 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entity người dùng.
- * Lưu thông tin tài khoản và vai trò của người dùng trong hệ thống.
+ * Entity lưu thông tin tài khoản và vai trò người dùng trong hệ thống.
  */
 @Entity
-@Table(name = "users", indexes = {
-        @Index(name = "idx_users_email", columnList = "email"),
-        @Index(name = "idx_users_email", columnList = "role")
-})
+@Table(
+        name = "users",
+        indexes = {
+                @Index(name = "idx_users_role", columnList = "role"),
+                @Index(name = "idx_users_active", columnList = "active")
+        }
+)
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @ToString
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @Column(nullable = false, length = 100)
@@ -37,7 +41,7 @@ public class User {
     private String fullName;
 
     @Column(nullable = false, unique = true, length = 100)
-    @Comment("Email dùng để đăng nhập (Unique)")
+    @Comment("Email dùng để đăng nhập (Unique - DB tự động tạo Unique Index ngầm)")
     private String email;
 
     @Column(nullable = false)
@@ -55,8 +59,7 @@ public class User {
 
     /**
      * Trạng thái hoạt động của tài khoản.
-     * true: Tài khoản đang hoạt động bình thường.
-     * false: Tài khoản bị khóa (Admin banned hoặc chưa kích hoạt).
+     * true: Active, false: Banned/Locked.
      */
     @Builder.Default
     @Column(nullable = false)
@@ -72,15 +75,27 @@ public class User {
     @Comment("Thời điểm cập nhật thông tin gần nhất")
     private LocalDateTime updatedAt;
 
+    /**
+     * Danh sách khóa học do người dùng này làm giảng viên phụ trách.
+     */
+    @Builder.Default
     @ToString.Exclude
-    @OneToMany(mappedBy = "teacher")
+    @OneToMany(mappedBy = "teacher", fetch = FetchType.LAZY)
     private List<Course> courses = new ArrayList<>();
 
+    /**
+     * Danh sách đăng ký khóa học của học viên.
+     */
+    @Builder.Default
     @ToString.Exclude
-    @OneToMany(mappedBy = "student")
+    @OneToMany(mappedBy = "student", fetch = FetchType.LAZY)
     private List<Enrollment> enrollments = new ArrayList<>();
 
+    /**
+     * Danh sách đánh giá khóa học do học viên viết.
+     */
+    @Builder.Default
     @ToString.Exclude
-    @OneToMany(mappedBy = "student")
+    @OneToMany(mappedBy = "student", fetch = FetchType.LAZY)
     private List<Review> reviews = new ArrayList<>();
 }

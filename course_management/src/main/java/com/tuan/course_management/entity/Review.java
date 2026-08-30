@@ -8,49 +8,59 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 /**
- * Entity đánh giá khóa học.
- * Học viên sau khi đăng ký có thể gửi đánh giá (rating + comment) cho khóa học.
- * Mỗi học viên chỉ được gửi một đánh giá cho một khóa học (unique).
+ * Entity quản lý đánh giá và nhận xét khóa học của học viên.
+ * Đảm bảo tính duy nhất: Mỗi học viên chỉ được gửi duy nhất một đánh giá cho mỗi khóa học.
  */
 @Entity
-@Table(name = "reviews",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"student_id", "course_id"}))
+@Table(
+        name = "reviews",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_reviews_student_course",
+                columnNames = {"student_id", "course_id"}
+        ),
+        indexes = {
+                @Index(name = "idx_reviews_course_id", columnList = "course_id"),
+                @Index(name = "idx_reviews_student_id", columnList = "student_id")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @ToString
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Review {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     /**
-     * Số sao đánh giá (1-5).
+     * Số sao đánh giá (Giá trị hợp lệ từ 1 đến 5).
      */
     @Column(nullable = false)
     private int rating;
 
     /**
-     * Nội dung bình luận.
+     * Nội dung nhận xét/bình luận của học viên.
      */
     @Column(columnDefinition = "TEXT")
     private String comment;
 
     /**
-     * Học viên viết đánh giá.
+     * Học viên viết đánh giá (Bắt buộc phải có).
      */
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "student_id", nullable = false)
     @ToString.Exclude
     private User student;
 
     /**
-     * Khóa học được đánh giá.
+     * Khóa học được đánh giá (Bắt buộc phải có).
      */
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "course_id", nullable = false)
     @ToString.Exclude
     private Course course;
@@ -61,4 +71,21 @@ public class Review {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    // ================= DOMAIN BUSINESS METHODS =================
+
+    /**
+     * Cập nhật nội dung đánh giá và số sao.
+     *
+     * @param newRating  Số sao mới (từ 1 đến 5)
+     * @param newComment Nội dung nhận xét mới
+     */
+    public void updateReview(int newRating, String newComment) {
+        if (newRating >= 1 && newRating <= 5) {
+            this.rating = newRating;
+        }
+        if (newComment != null) {
+            this.comment = newComment.trim();
+        }
+    }
 }
