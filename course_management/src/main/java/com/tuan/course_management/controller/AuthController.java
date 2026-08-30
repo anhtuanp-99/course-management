@@ -13,11 +13,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * Controller tiếp nhận và xử lý các Endpoint liên quan đến xác thực và tài khoản.
+ * Controller tiếp nhận và xử lý các Endpoint RESTful liên quan đến xác thực và tài khoản.
  */
 @Slf4j
 @RestController
@@ -29,18 +30,18 @@ public class AuthController {
     private final UserService userService;
 
     /**
-     * Đăng ký tài khoản người dùng mới.
+     * Đăng ký tài khoản người dùng mới. Trả về HTTP Status 201 CREATED.
      */
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<String>> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequest request) {
         log.info("Nhận yêu cầu đăng ký tài khoản cho email: {}", request.getEmail());
         userService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Đăng ký tài khoản thành công!"));
+                .body(ApiResponse.success("Đăng ký tài khoản thành công!", null));
     }
 
     /**
-     * Đăng nhập hệ thống và nhận chuỗi Authentication Token.
+     * Đăng nhập hệ thống và nhận chuỗi Authentication Token (STT 1).
      */
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<JwtResponse>> login(@Valid @RequestBody LoginRequest request) {
@@ -50,27 +51,31 @@ public class AuthController {
     }
 
     /**
-     * Lấy thông tin tài khoản của người dùng đang đăng nhập.
+     * Lấy thông tin tài khoản cá nhân của người dùng hiện tại (STT 3).
      */
     @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<UserResponse>> me(@AuthenticationPrincipal UserPrincipal userPrincipal) {
         UserResponse response = authService.getMe(userPrincipal);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     /**
-     * Kiểm tra tính hợp lệ của Token.
+     * Kiểm tra tính hợp lệ của Token (STT 2).
      */
     @PostMapping("/verify")
-    public ResponseEntity<ApiResponse<Void>> verify(@RequestParam("token") String token) {
-        return ResponseEntity.ok(authService.verify(token));
+    public ResponseEntity<ApiResponse<Void>> verify(@RequestParam(name = "token") String token) {
+        authService.verify(token);
+        return ResponseEntity.ok(ApiResponse.success("Token hợp lệ", null));
     }
 
     /**
-     * Đăng xuất khỏi hệ thống.
+     * Đăng xuất khỏi hệ thống (STT 30).
      */
     @PostMapping("/logout")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Void>> logout() {
-        return ResponseEntity.ok(authService.logout());
+        authService.logout();
+        return ResponseEntity.ok(ApiResponse.success("Đăng xuất thành công", null));
     }
 }
