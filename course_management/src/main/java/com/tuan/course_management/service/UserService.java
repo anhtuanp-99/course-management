@@ -5,10 +5,8 @@ import com.tuan.course_management.dto.response.PageResponse;
 import com.tuan.course_management.dto.response.UserResponse;
 import com.tuan.course_management.entity.User;
 import com.tuan.course_management.enums.Role;
-import com.tuan.course_management.exception.BadRequestException;
-import com.tuan.course_management.exception.ConflictException;
-import com.tuan.course_management.exception.ForbiddenException;
-import com.tuan.course_management.exception.ResourceNotFoundException;
+import com.tuan.course_management.exception.AppException;
+import com.tuan.course_management.exception.ErrorCode;
 import com.tuan.course_management.mapper.UserMapper;
 import com.tuan.course_management.repository.UserRepository;
 import com.tuan.course_management.util.PageUtils;
@@ -22,7 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * UserService: Quản lý các nghiệp vụ liên quan đến người dùng.
+ * Dịch vụ quản lý thông tin người dùng và các nghiệp vụ tài khoản liên quan.
  */
 @Service
 @RequiredArgsConstructor
@@ -34,14 +32,16 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     /**
-     * Đăng ký tài khoản người dùng mới.
+     * Đăng ký tài khoản người dùng mới với vai trò mặc định.
+     *
+     * @param request Thông tin đăng ký từ phía Client
      */
     @Transactional
     public void register(RegisterRequest request) {
-        log.debug("Đăng ký tài khoản mới: email={}", request.getEmail());
+        log.debug("Bắt đầu đăng ký tài khoản mới cho email: {}", request.getEmail());
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new ConflictException("Email đã được sử dụng: " + request.getEmail());
+            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
         User user = User.builder()
@@ -53,15 +53,23 @@ public class UserService {
                 .build();
 
         User savedUser = userRepository.save(user);
-        log.info("Đăng ký tài khoản thành công. UserID: {}", savedUser.getId());
+        log.info("Đăng ký tài khoản thành công cho User ID: {}", savedUser.getId());
     }
 
     /**
-     * Lấy danh sách người dùng có phân trang và bộ lọc.
+     * Lấy danh sách người dùng theo điều kiện lọc và phân trang.
+     *
+     * @param page Số trang truy vấn
+     * @param size Số lượng bản ghi trên một trang
+     * @param sortBy Cột thực hiện sắp xếp
+     * @param sortDir Hướng sắp xếp (ASC/DESC)
+     * @param role Lọc theo vai trò
+     * @param isActive Lọc theo trạng thái tài khoản
+     * @return PageResponse Danh sách người dùng dạng DTO phân trang
      */
     public PageResponse<UserResponse> getUsers(int page, int size, String sortBy, String sortDir,
                                                Role role, Boolean isActive) {
-        log.debug("Lấy danh sách người dùng: page={}, size={}, role={}, isActive={}", page, size, role, isActive);
+        log.debug("Truy vấn danh sách người dùng với bộ lọc - Page: {}, Size: {}, Role: {}, Active: {}", page, size, role, isActive);
 
         Pageable pageable = PageUtils.createPageable(page, size, sortBy, sortDir, "createdAt");
 
@@ -81,24 +89,30 @@ public class UserService {
     }
 
     /**
-     * Lấy thông tin chi tiết người dùng theo ID.
+     * Lấy thông tin chi tiết một người dùng theo mã định danh.
+     *
+     * @param userId Mã định danh người dùng
+     * @return UserResponse Dữ liệu thông tin người dùng
      */
     public UserResponse getUserById(Long userId) {
-        log.debug("Lấy thông tin người dùng ID: {}", userId);
+        log.debug("Truy vấn thông tin người dùng cho User ID: {}", userId);
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với ID: " + userId));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         return UserMapper.toResponse(user);
     }
 
     /**
-     * Tạo mới người dùng từ trang quản trị.
+     * Khởi tạo tài khoản người dùng mới từ giao diện quản trị.
+     *
+     * @param request Thông tin tài khoản cần tạo
+     * @return UserResponse Dữ liệu tài khoản sau khi tạo
      */
     @Transactional
     public UserResponse createUser(CreateUserRequest request) {
-        log.debug("Bắt đầu tạo người dùng mới: email={}", request.getEmail());
+        log.debug("Thực hiện tạo tài khoản mới từ quản trị cho email: {}", request.getEmail());
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new ConflictException("Email đã được sử dụng: " + request.getEmail());
+            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
         User user = User.builder()
@@ -111,104 +125,122 @@ public class UserService {
                 .build();
 
         User savedUser = userRepository.save(user);
-        log.info("Tạo người dùng thành công. UserID: {}", savedUser.getId());
+        log.info("Tạo người dùng thành công cho User ID: {}", savedUser.getId());
 
         return UserMapper.toResponse(savedUser);
     }
 
     /**
-     * Cập nhật thông tin hồ sơ người dùng.
+     * Cập nhật thông tin hồ sơ của người dùng.
+     *
+     * @param userId Mã định danh người dùng cần cập nhật
+     * @param request Dữ liệu hồ sơ mới
+     * @return UserResponse Thông tin người dùng sau khi cập nhật
      */
     @Transactional
     public UserResponse updateUser(Long userId, UpdateUserRequest request) {
-        log.debug("Cập nhật hồ sơ người dùng ID: {}", userId);
+        log.debug("Thực hiện cập nhật thông tin hồ sơ cho User ID: {}", userId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với ID: " + userId));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         if (request.getFullName() != null) user.setFullName(request.getFullName());
         if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
             if (userRepository.existsByEmail(request.getEmail())) {
-                throw new ConflictException("Email đã được sử dụng: " + request.getEmail());
+                throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
             }
             user.setEmail(request.getEmail());
         }
         if (request.getPhone() != null) user.setPhone(request.getPhone());
 
         User updatedUser = userRepository.save(user);
-        log.info("Cập nhật hồ sơ thành công. UserID: {}", updatedUser.getId());
+        log.info("Cập nhật thông tin hồ sơ thành công cho User ID: {}", updatedUser.getId());
 
         return UserMapper.toResponse(updatedUser);
     }
 
     /**
-     * Thay đổi vai trò người dùng hệ thống.
+     * Thay đổi vai trò người dùng trong hệ thống.
+     *
+     * @param userId Mã định danh người dùng bị thay đổi vai trò
+     * @param request Vai trò mới
+     * @param currentAdminId Mã định danh Admin đang thực hiện thao tác
+     * @return UserResponse Thông tin người dùng sau khi đổi vai trò
      */
     @Transactional
     public UserResponse updateUserRole(Long userId, UpdateRoleRequest request, Long currentAdminId) {
-        log.debug("Cập nhật role người dùng ID: {} bởi Admin ID: {}", userId, currentAdminId);
+        log.debug("Thay đổi vai trò người dùng ID: {} bởi Admin ID: {}", userId, currentAdminId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với ID: " + userId));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         if (user.getRole() == Role.ADMIN && userId.equals(currentAdminId)) {
-            throw new ForbiddenException("Không thể tự thay đổi role của chính mình");
+            throw new AppException(ErrorCode.CANNOT_CHANGE_OWN_ROLE);
         }
 
         user.setRole(request.getRole());
         User updatedUser = userRepository.save(user);
-        log.info("Cập nhật role thành công. UserID: {}, Role mới: {}", updatedUser.getId(), updatedUser.getRole());
+        log.info("Cập nhật vai trò thành công cho User ID: {}, Vai trò mới: {}", updatedUser.getId(), updatedUser.getRole());
 
         return UserMapper.toResponse(updatedUser);
     }
 
     /**
-     * Khóa hoặc mở khóa tài khoản người dùng.
+     * Cập nhật trạng thái kích hoạt hoặc khóa tài khoản.
+     *
+     * @param userId Mã định danh người dùng
+     * @param request Trạng thái mới
+     * @return UserResponse Thông tin người dùng sau khi đổi trạng thái
      */
     @Transactional
     public UserResponse updateUserStatus(Long userId, UpdateStatusRequest request) {
-        log.debug("Cập nhật trạng thái người dùng ID: {}", userId);
+        log.debug("Thay đổi trạng thái hoạt động cho User ID: {}", userId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với ID: " + userId));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         user.setActive(request.getActive());
         User updatedUser = userRepository.save(user);
-        log.info("Cập nhật trạng thái thành công. UserID: {}, active: {}", updatedUser.getId(), updatedUser.isActive());
+        log.info("Cập nhật trạng thái thành công cho User ID: {}, Active: {}", updatedUser.getId(), updatedUser.isActive());
 
         return UserMapper.toResponse(updatedUser);
     }
 
     /**
-     * Xóa tài khoản người dùng khỏi hệ thống.
+     * Xóa tài khoản người dùng khỏi cơ sở dữ liệu.
+     *
+     * @param userId Mã định danh người dùng cần xóa
      */
     @Transactional
     public void deleteUser(Long userId) {
-        log.debug("Xóa người dùng ID: {}", userId);
+        log.debug("Thực hiện xóa người dùng cho User ID: {}", userId);
 
         if (!userRepository.existsById(userId)) {
-            throw new ResourceNotFoundException("Không tìm thấy người dùng với ID: " + userId);
+            throw new AppException(ErrorCode.USER_NOT_FOUND);
         }
         userRepository.deleteById(userId);
-        log.info("Xóa người dùng thành công. UserID: {}", userId);
+        log.info("Xóa người dùng thành công cho User ID: {}", userId);
     }
 
     /**
-     * Thay đổi mật khẩu tài khoản.
+     * Thay đổi mật khẩu người dùng.
+     *
+     * @param userId Mã định danh người dùng
+     * @param request Dữ liệu mật khẩu cũ và mật khẩu mới
      */
     @Transactional
     public void changePassword(Long userId, ChangePasswordRequest request) {
-        log.debug("Đổi mật khẩu cho người dùng ID: {}", userId);
+        log.debug("Thực hiện đổi mật khẩu cho User ID: {}", userId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với ID: " + userId));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
-            throw new BadRequestException("Mật khẩu cũ không chính xác");
+            throw new AppException(ErrorCode.INVALID_PASSWORD);
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
-        log.info("Đổi mật khẩu thành công. UserID: {}", userId);
+        log.info("Đổi mật khẩu thành công cho User ID: {}", userId);
     }
 }

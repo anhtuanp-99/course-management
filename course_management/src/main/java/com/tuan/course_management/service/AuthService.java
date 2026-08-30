@@ -5,6 +5,8 @@ import com.tuan.course_management.dto.response.ApiResponse;
 import com.tuan.course_management.dto.response.JwtResponse;
 import com.tuan.course_management.dto.response.UserResponse;
 import com.tuan.course_management.entity.User;
+import com.tuan.course_management.exception.AppException;
+import com.tuan.course_management.exception.ErrorCode;
 import com.tuan.course_management.mapper.UserMapper;
 import com.tuan.course_management.repository.UserRepository;
 import com.tuan.course_management.security.JwtProvider;
@@ -18,7 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * AuthService: Xử lý nghiệp vụ đăng nhập, xác thực token và lấy thông tin người dùng.
+ * Dịch vụ xử lý nghiệp vụ xác thực người dùng và quản lý phiên đăng nhập.
  */
 @Service
 @RequiredArgsConstructor
@@ -30,7 +32,10 @@ public class AuthService {
     private final UserRepository userRepository;
 
     /**
-     * Xác thực tài khoản và cấp phát chuỗi JWT Token.
+     * Xác thực thông tin tài khoản và cấp phát chuỗi Token xác thực.
+     *
+     * @param request Yêu cầu đăng nhập chứa email và password
+     * @return JwtResponse Chuỗi Access Token, Refresh Token và thông tin cơ bản
      */
     public JwtResponse login(LoginRequest request) {
         log.debug("Bắt đầu xác thực đăng nhập cho email: {}", request.getEmail());
@@ -44,7 +49,7 @@ public class AuthService {
         String accessToken = jwtProvider.generateAccessToken(userPrincipal);
         String refreshToken = jwtProvider.generateRefreshToken(userPrincipal);
 
-        log.info("Đăng nhập thành công. UserID: {}, Email: {}", userPrincipal.getId(), userPrincipal.getUsername());
+        log.info("Đăng nhập thành công cho UserID: {}, Email: {}", userPrincipal.getId(), userPrincipal.getUsername());
 
         return JwtResponse.builder()
                 .accessToken(accessToken)
@@ -58,10 +63,13 @@ public class AuthService {
     }
 
     /**
-     * Kiểm tra trạng thái hiệu lực của Token.
+     * Kiểm tra trạng thái và tính hợp lệ của JWT Token.
+     *
+     * @param token Chuỗi Token cần xác thực
+     * @return ApiResponse Kết quả kiểm tra
      */
     public ApiResponse<Void> verify(String token) {
-        log.debug("Xác thực trạng thái token");
+        log.debug("Kiểm tra tính hợp lệ của Token");
 
         if (token == null || token.isBlank()) {
             log.warn("Token không được cung cấp");
@@ -79,24 +87,29 @@ public class AuthService {
     }
 
     /**
-     * Lấy thông tin chi tiết người dùng hiện tại từ Database.
+     * Truy vấn thông tin chi tiết của người dùng đang đăng nhập dựa trên thông tin SecurityContext.
+     *
+     * @param userPrincipal Đối tượng chứa thông tin xác thực đã qua kiểm tra
+     * @return UserResponse Dữ liệu người dùng dạng DTO
      */
     @Transactional(readOnly = true)
     public UserResponse getMe(UserPrincipal userPrincipal) {
-        log.debug("Lấy thông tin người dùng từ UserPrincipal ID: {}", userPrincipal.getId());
+        log.debug("Lấy thông tin tài khoản cho User ID: {}", userPrincipal.getId());
 
         User user = userRepository.findById(userPrincipal.getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin người dùng"));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        log.info("Lấy thông tin người dùng thành công. UserID: {}", user.getId());
+        log.info("Lấy thông tin người dùng thành công cho User ID: {}", user.getId());
         return UserMapper.toResponse(user);
     }
 
     /**
-     * Đăng xuất khỏi hệ thống.
+     * Đăng xuất người dùng khỏi hệ thống.
+     *
+     * @return ApiResponse Thông báo kết quả đăng xuất
      */
     public ApiResponse<Void> logout() {
-        log.info("Đăng xuất thành công");
+        log.info("Thực hiện đăng xuất người dùng thành công");
         return ApiResponse.success("Đăng xuất thành công", null);
     }
 }

@@ -20,65 +20,27 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * GlobalExceptionHandler: Bộ chặn và xử lý tập trung toàn bộ ngoại lệ trong ứng dụng.
- * Chuyển đổi tất cả lỗi hệ thống và nghiệp vụ về định dạng ApiResponse thống nhất.
+ * GlobalExceptionHandler: Bộ xử lý và chuẩn hóa toàn bộ ngoại lệ trong hệ thống.
  */
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
 
     /**
-     * Xử lý lỗi không tìm thấy tài nguyên.
+     * Xử lý tất cả ngoại lệ nghiệp vụ do ứng dụng chủ động ném ra.
      */
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleNotFound(ResourceNotFoundException ex) {
-        log.warn("Không tìm thấy tài nguyên: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error(ex.getMessage()));
+    @ExceptionHandler(AppException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAppException(AppException ex) {
+        ErrorCode errorCode = ex.getErrorCode();
+        log.warn("Lỗi nghiệp vụ [Code {}]: {}", errorCode.getCode(), errorCode.getMessage());
+
+        return ResponseEntity
+                .status(errorCode.getHttpStatus())
+                .body(ApiResponse.error(errorCode.getMessage()));
     }
 
     /**
-     * Xử lý lỗi yêu cầu không hợp lệ từ logic nghiệp vụ.
-     */
-    @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<ApiResponse<Void>> handleBadRequest(BadRequestException ex) {
-        log.warn("Yêu cầu không hợp lệ: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(ex.getMessage()));
-    }
-
-    /**
-     * Xử lý lỗi chưa xác thực người dùng.
-     */
-    @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<ApiResponse<Void>> handleUnauthorized(UnauthorizedException ex) {
-        log.warn("Chưa xác thực: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error(ex.getMessage()));
-    }
-
-    /**
-     * Xử lý lỗi không có quyền thực hiện hành động.
-     */
-    @ExceptionHandler(ForbiddenException.class)
-    public ResponseEntity<ApiResponse<Void>> handleForbidden(ForbiddenException ex) {
-        log.warn("Không có quyền truy cập: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error(ex.getMessage()));
-    }
-
-    /**
-     * Xử lý lỗi xung đột dữ liệu.
-     */
-    @ExceptionHandler(ConflictException.class)
-    public ResponseEntity<ApiResponse<Void>> handleConflict(ConflictException ex) {
-        log.warn("Xung đột dữ liệu: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(ApiResponse.error(ex.getMessage()));
-    }
-
-    /**
-     * Xử lý lỗi sai tài khoản hoặc mật khẩu khi đăng nhập.
+     * Xử lý lỗi sai email hoặc mật khẩu từ Spring Security.
      */
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiResponse<Void>> handleBadCredentials(BadCredentialsException ex) {
@@ -88,7 +50,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Xử lý lỗi tài khoản bị khóa hoặc bị vô hiệu hóa.
+     * Xử lý lỗi tài khoản bị vô hiệu hóa hoặc chưa kích hoạt.
      */
     @ExceptionHandler({DisabledException.class, LockedException.class})
     public ResponseEntity<ApiResponse<Void>> handleAccountDisabled(Exception ex) {
@@ -98,7 +60,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Xử lý lỗi từ chối truy cập từ phân quyền Spring Security (@PreAuthorize).
+     * Xử lý lỗi phân quyền Spring Security từ annotation @PreAuthorize.
      */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
@@ -108,7 +70,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Xử lý lỗi Validation dữ liệu đầu vào Request Body (@Valid).
+     * Xử lý lỗi Validation dữ liệu Request Body (@Valid).
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Map<String, String>>> handleValidation(MethodArgumentNotValidException ex) {
@@ -135,7 +97,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Xử lý lỗi Body JSON sai cú pháp hoặc sai kiểu dữ liệu truyền vào.
+     * Xử lý lỗi Body JSON gửi lên sai cú pháp hoặc sai kiểu dữ liệu.
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
@@ -145,15 +107,13 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Xử lý lỗi tham số trên đường dẫn (URL) không đúng kiểu dữ liệu khai báo.
+     * Xử lý lỗi tham số trên URL không đúng kiểu dữ liệu khai báo.
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiResponse<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
-        log.warn("Tham số '{}' có giá trị '{}' không đúng kiểu dữ liệu yêu cầu", ex.getName(), ex.getValue());
-        String message = String.format("Tham số '%s' phải thuộc kiểu dữ liệu %s",
-                ex.getName(), ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "mới");
+        log.warn("Tham số '{}' không đúng kiểu dữ liệu yêu cầu", ex.getName());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(message));
+                .body(ApiResponse.error("Tham số trên đường dẫn không đúng kiểu dữ liệu"));
     }
 
     /**
@@ -161,14 +121,13 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ApiResponse<Void>> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
-        log.warn("Phương thức HTTP '{}' không được hỗ trợ cho Endpoint này", ex.getMethod());
-        String message = String.format("Phương thức HTTP %s không được hỗ trợ cho đường dẫn này", ex.getMethod());
+        log.warn("Phương thức HTTP '{}' không được hỗ trợ", ex.getMethod());
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
-                .body(ApiResponse.error(message));
+                .body(ApiResponse.error("Phương thức HTTP không được hỗ trợ cho đường dẫn này"));
     }
 
     /**
-     * Xử lý tất cả các ngoại lệ chưa được phân loại (Lưới hứng cuối cùng).
+     * Lưới hứng cuối cùng cho tất cả các lỗi chưa được phân loại.
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGlobal(Exception ex) {
