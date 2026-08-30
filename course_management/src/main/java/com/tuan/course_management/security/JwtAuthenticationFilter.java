@@ -1,10 +1,12 @@
 package com.tuan.course_management.security;
 
+import com.tuan.course_management.enums.Role;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -17,33 +19,41 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * JwtAuthenticationFilter: Lọc mỗi request, lấy JWT từ header Authorization,
- * bóc tách Claims tạo UserPrincipal trên RAM và set vào SecurityContext.
+ * Bộ lọc tự động trích xuất và xác thực chuỗi JWT từ Authorization Header trên mỗi Request.
+ * Tự động tạo đối tượng UserPrincipal trên RAM (Stateless) mà không cần truy vấn Database.
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    private static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final String BEARER_PREFIX = "Bearer ";
+
     private final JwtProvider jwtProvider;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain
+    ) throws ServletException, IOException {
         try {
             String token = getJwtFromRequest(request);
 
             if (StringUtils.hasText(token) && jwtProvider.validateToken(token)
                     && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                // Lấy toàn bộ thông tin Claims từ Token mà KHÔNG BẤM DATABASE
+                // Lấy toàn bộ thông tin Claims từ Token mà KHÔNG CẦN TRUY VẤN DATABASE
                 Claims claims = jwtProvider.getClaimsFromToken(token);
                 Long userId = claims.get("userId", Long.class);
-                String role = claims.get("role", String.class);
+                String roleStr = claims.get("role", String.class);
                 String email = claims.getSubject();
 
-                // Tự dựng UserPrincipal trực tiếp trên RAM (Stateless)
+                // Ánh xạ chuỗi Role từ Claim sang Enum Role
+                Role role = Role.valueOf(roleStr);
+
+                // Khởi tạo UserPrincipal với Enum Role đã refactor
                 UserPrincipal userDetails = UserPrincipal.builder()
                         .id(userId)
                         .email(email)
@@ -56,24 +66,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                // Set vào SecurityContext
+                // Lưu thông tin xác thực vào Security Context
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         } catch (Exception e) {
             log.warn("Không thể xác thực người dùng từ JWT Token: {}", e.getMessage());
         }
 
-        // Tiếp tục chuỗi Filter
         filterChain.doFilter(request, response);
     }
 
     /**
-     * Lấy JWT từ header Authorization (Bearer token).
+     * Trích xuất chuỗi JWT Token từ Header Authorization (Bearer Token).
      */
     private String getJwtFromRequest(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
+        String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
+            return bearerToken.substring(BEARER_PREFIX.length());
         }
         return null;
     }
