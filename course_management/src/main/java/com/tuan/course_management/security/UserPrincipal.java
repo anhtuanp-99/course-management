@@ -1,6 +1,7 @@
 package com.tuan.course_management.security;
 
 import com.tuan.course_management.entity.User;
+import com.tuan.course_management.enums.Role;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,8 +13,8 @@ import java.util.Collection;
 import java.util.Collections;
 
 /**
- * UserPrincipal implements UserDetails của Spring Security.
- *  * Chuyển đổi từ User entity sang đối tượng Spring Security hiểu được.
+ * Lớp đại diện cho thông tin người dùng được Spring Security xác thực.
+ * Chuyển đổi dữ liệu từ Entity User sang đối tượng UserDetails.
  */
 @Getter
 @AllArgsConstructor
@@ -24,23 +25,29 @@ public class UserPrincipal implements UserDetails {
     private final String email;
     private final String fullName;
     private final String password;
-    private final String role;
+    private final Role role;
     private final boolean active;
 
+    /**
+     * Khởi tạo đối tượng UserPrincipal từ Entity User.
+     *
+     * @param user Entity người dùng
+     * @return UserPrincipal Đối tượng chứa thông tin xác thực
+     */
     public static UserPrincipal from(User user) {
         return UserPrincipal.builder()
                 .id(user.getId())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .password(user.getPassword())
-                .role(user.getRole().name())
+                .role(user.getRole())
                 .active(user.isActive())
                 .build();
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role));
+        return Collections.singletonList(new SimpleGrantedAuthority(role.getAuthority()));
     }
 
     @Override
@@ -55,7 +62,7 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return active;
     }
 
     @Override
