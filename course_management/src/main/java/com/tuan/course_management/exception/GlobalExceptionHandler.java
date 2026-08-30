@@ -3,6 +3,7 @@ package com.tuan.course_management.exception;
 import com.tuan.course_management.dto.response.ApiResponse;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -117,6 +118,7 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(4002, "Tham số trên đường dẫn không đúng kiểu dữ liệu"));
     }
 
+
     /**
      * Xử lý lỗi gọi sai phương thức HTTP (GET, POST, PUT, DELETE).
      */
@@ -125,6 +127,17 @@ public class GlobalExceptionHandler {
         log.warn("Phương thức HTTP '{}' không được hỗ trợ", ex.getMethod());
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
                 .body(ApiResponse.error(4003, "Phương thức HTTP không được hỗ trợ cho đường dẫn này"));
+    }
+
+    /**
+     * Xử lý lỗi sắp xếp theo trường không tồn tại trong Entity (PropertyReferenceException).
+     */
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePropertyReference(PropertyReferenceException ex) {
+        log.warn("Lỗi tham số sắp xếp không hợp lệ: Trường '{}' không tồn tại", ex.getPropertyName());
+        String message = String.format("Trường sắp xếp '%s' không tồn tại trong hệ thống", ex.getPropertyName());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(4004, message));
     }
 
     /**
