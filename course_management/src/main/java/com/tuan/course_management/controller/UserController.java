@@ -9,13 +9,14 @@ import com.tuan.course_management.security.UserPrincipal;
 import com.tuan.course_management.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * UserController: xử lý các endpoint quản lý người dùng.
+ * Controller tiếp nhận và xử lý các Endpoint RESTful liên quan đến quản lý người dùng.
  */
 @RestController
 @RequestMapping("/api/users")
@@ -25,49 +26,54 @@ public class UserController {
     private final UserService userService;
 
     /**
-     * Lấy danh sách người dùng (ADMIN).
+     * Lấy danh sách người dùng có phân trang và bộ lọc (Chỉ ADMIN).
      */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<PageResponse<UserResponse>>> getUsers(
-            @RequestParam(required = false) Role role,
-            @RequestParam(required = false) Boolean isActive,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir) {
+            @RequestParam(name = "role", required = false) Role role,
+            @RequestParam(name = "status", required = false) Boolean isActive,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "sortBy", defaultValue = "createdAt") String sortBy,
+            @RequestParam(name = "sortDir", defaultValue = "desc") String sortDir) {
 
         PageResponse<UserResponse> response = userService.getUsers(page, size, sortBy, sortDir, role, isActive);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     /**
-     * Lấy thông tin một người dùng (ADMIN).
+     * Lấy thông tin chi tiết một người dùng (Chỉ ADMIN).
+     * Đáp ứng STT 5.
      */
     @GetMapping("/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<UserResponse>> getUser(@PathVariable Long userId) {
+    public ResponseEntity<ApiResponse<UserResponse>> getUser(
+            @PathVariable("userId") Long userId) {
         UserResponse response = userService.getUserById(userId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     /**
-     * Tạo người dùng mới (ADMIN).
+     * Tạo tài khoản người dùng mới từ màn hình quản trị (Chỉ ADMIN).
      */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<UserResponse>> createUser(@Valid @RequestBody CreateUserRequest request) {
+    public ResponseEntity<ApiResponse<UserResponse>> createUser(
+            @Valid @RequestBody CreateUserRequest request) {
         UserResponse response = userService.createUser(request);
-        return ResponseEntity.ok(ApiResponse.success("Tạo người dùng thành công", response));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Tạo người dùng thành công", response));
     }
 
     /**
-     * Cập nhật role người dùng (ADMIN).
+     * Cập nhật vai trò (role) của người dùng (Chỉ ADMIN).
+     * Ràng buộc: ADMIN không được phép sửa role của ADMIN khác hoặc của chính mình.
      */
     @PutMapping("/{userId}/role")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> updateUserRole(
-            @PathVariable Long userId,
+            @PathVariable("userId") Long userId,
             @Valid @RequestBody UpdateRoleRequest request,
             @AuthenticationPrincipal UserPrincipal currentAdmin) {
 
@@ -76,12 +82,12 @@ public class UserController {
     }
 
     /**
-     * Cập nhật trạng thái hoạt động (ADMIN).
+     * Kích hoạt hoặc vô hiệu hóa tài khoản người dùng (Chỉ ADMIN).
      */
     @PutMapping("/{userId}/status")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> updateUserStatus(
-            @PathVariable Long userId,
+            @PathVariable("userId") Long userId,
             @Valid @RequestBody UpdateStatusRequest request) {
 
         UserResponse response = userService.updateUserStatus(userId, request);
@@ -89,12 +95,12 @@ public class UserController {
     }
 
     /**
-     * Cập nhật hồ sơ cá nhân (OWNER hoặc ADMIN).
+     * Cập nhật thông tin hồ sơ cá nhân (Chỉ OWNER hoặc ADMIN).
      */
     @PutMapping("/{userId}")
     @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
     public ResponseEntity<ApiResponse<UserResponse>> updateUser(
-            @PathVariable Long userId,
+            @PathVariable("userId") Long userId,
             @Valid @RequestBody UpdateUserRequest request) {
 
         UserResponse response = userService.updateUser(userId, request);
@@ -102,12 +108,12 @@ public class UserController {
     }
 
     /**
-     * Đổi mật khẩu (OWNER hoặc ADMIN).
+     * Đổi mật khẩu tài khoản người dùng (Chỉ OWNER hoặc ADMIN).
      */
     @PutMapping("/{userId}/password")
     @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
     public ResponseEntity<ApiResponse<Void>> changePassword(
-            @PathVariable Long userId,
+            @PathVariable("userId") Long userId,
             @Valid @RequestBody ChangePasswordRequest request) {
 
         userService.changePassword(userId, request);
@@ -115,11 +121,12 @@ public class UserController {
     }
 
     /**
-     * Xóa người dùng (ADMIN).
+     * Xóa tài khoản người dùng khỏi hệ thống (Chỉ ADMIN).
      */
     @DeleteMapping("/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long userId) {
+    public ResponseEntity<ApiResponse<Void>> deleteUser(
+            @PathVariable("userId") Long userId) {
         userService.deleteUser(userId);
         return ResponseEntity.ok(ApiResponse.success("Xóa người dùng thành công", null));
     }
