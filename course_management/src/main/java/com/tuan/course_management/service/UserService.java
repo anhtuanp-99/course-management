@@ -10,6 +10,7 @@ import com.tuan.course_management.exception.ErrorCode;
 import com.tuan.course_management.mapper.UserMapper;
 import com.tuan.course_management.repository.UserRepository;
 import com.tuan.course_management.util.PageUtils;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -18,6 +19,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Dịch vụ quản lý thông tin người dùng và các nghiệp vụ tài khoản liên quan.
@@ -57,7 +61,7 @@ public class UserService {
     }
 
     /**
-     * Lấy danh sách người dùng theo điều kiện lọc và phân trang.
+     * Lấy danh sách người dùng theo điều kiện lọc và phân trang bằng Specification.
      *
      * @param page Số trang truy vấn
      * @param size Số lượng bản ghi trên một trang
@@ -69,23 +73,25 @@ public class UserService {
      */
     public PageResponse<UserResponse> getUsers(int page, int size, String sortBy, String sortDir,
                                                Role role, Boolean isActive) {
-        log.debug("Truy vấn danh sách người dùng với bộ lọc - Page: {}, Size: {}, Role: {}, Active: {}", page, size, role, isActive);
+        log.debug("Truy vấn danh sách người dùng - Page: {}, Size: {}, Role: {}, Active: {}", page, size, role, isActive);
 
         Pageable pageable = PageUtils.createPageable(page, size, sortBy, sortDir, "createdAt");
 
-        Specification<User> spec = Specification.where(null);
+        Specification<User> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
 
-        if (role != null) {
-            spec = spec.and((root, query, cb) -> cb.equal(root.get("role"), role));
-        }
-        if (isActive != null) {
-            spec = spec.and((root, query, cb) -> cb.equal(root.get("active"), isActive));
-        }
+            if (role != null) {
+                predicates.add(cb.equal(root.get("role"), role));
+            }
+            if (isActive != null) {
+                predicates.add(cb.equal(root.get("active"), isActive));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
 
         Page<User> userPage = userRepository.findAll(spec, pageable);
-        Page<UserResponse> responsePage = userPage.map(UserMapper::toResponse);
-
-        return PageResponse.from(responsePage);
+        return PageResponse.from(userPage.map(UserMapper::toResponse));
     }
 
     /**
@@ -131,7 +137,7 @@ public class UserService {
     }
 
     /**
-     * Cập nhật thông tin hồ sơ của người dùng.
+     * Cập nhật thông tin hồ sơ của người dùng. Tận dụng cơ chế Dirty Checking của JPA.
      *
      * @param userId Mã định danh người dùng cần cập nhật
      * @param request Dữ liệu hồ sơ mới
@@ -153,10 +159,8 @@ public class UserService {
         }
         if (request.getPhone() != null) user.setPhone(request.getPhone());
 
-        User updatedUser = userRepository.save(user);
-        log.info("Cập nhật thông tin hồ sơ thành công cho User ID: {}", updatedUser.getId());
-
-        return UserMapper.toResponse(updatedUser);
+        log.info("Cập nhật thông tin hồ sơ thành công cho User ID: {}", user.getId());
+        return UserMapper.toResponse(user);
     }
 
     /**
@@ -179,10 +183,9 @@ public class UserService {
         }
 
         user.setRole(request.getRole());
-        User updatedUser = userRepository.save(user);
-        log.info("Cập nhật vai trò thành công cho User ID: {}, Vai trò mới: {}", updatedUser.getId(), updatedUser.getRole());
+        log.info("Cập nhật vai trò thành công cho User ID: {}, Vai trò mới: {}", user.getId(), user.getRole());
 
-        return UserMapper.toResponse(updatedUser);
+        return UserMapper.toResponse(user);
     }
 
     /**
@@ -200,10 +203,9 @@ public class UserService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         user.setActive(request.getActive());
-        User updatedUser = userRepository.save(user);
-        log.info("Cập nhật trạng thái thành công cho User ID: {}, Active: {}", updatedUser.getId(), updatedUser.isActive());
+        log.info("Cập nhật trạng thái thành công cho User ID: {}, Active: {}", user.getId(), user.isActive());
 
-        return UserMapper.toResponse(updatedUser);
+        return UserMapper.toResponse(user);
     }
 
     /**
@@ -240,7 +242,6 @@ public class UserService {
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        userRepository.save(user);
         log.info("Đổi mật khẩu thành công cho User ID: {}", userId);
     }
 }
