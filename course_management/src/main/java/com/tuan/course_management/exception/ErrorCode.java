@@ -53,6 +53,12 @@ public enum ErrorCode {
     // ================= REPORT =================
     REPORT_DATA_NOT_FOUND(7001, "Không tìm thấy dữ liệu báo cáo", HttpStatus.NOT_FOUND),
 
+    // ================= HTTP & REQUEST VALIDATION =================
+    INVALID_INPUT_DATA(8000, "Dữ liệu đầu vào không hợp lệ", HttpStatus.BAD_REQUEST),
+    MALFORMED_JSON(8001, "Cấu trúc dữ liệu JSON gửi lên không hợp lệ", HttpStatus.BAD_REQUEST),
+    METHOD_NOT_SUPPORTED(8002, "Phương thức HTTP không được hỗ trợ cho Endpoint này", HttpStatus.METHOD_NOT_ALLOWED),
+    TYPE_MISMATCH(8003, "Tham số trên đường dẫn không đúng kiểu dữ liệu", HttpStatus.BAD_REQUEST),
+
     // ================= SYSTEM =================
     UNCATEGORIZED_EXCEPTION(9999, "Lỗi hệ thống chưa được phân loại", HttpStatus.INTERNAL_SERVER_ERROR);
 

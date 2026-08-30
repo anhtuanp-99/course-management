@@ -28,6 +28,7 @@ public class GlobalExceptionHandler {
 
     /**
      * Xử lý tất cả ngoại lệ nghiệp vụ do ứng dụng chủ động ném ra.
+     * Đã cập nhật truyền cả Custom Error Code vào ApiResponse.
      */
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ApiResponse<Void>> handleAppException(AppException ex) {
@@ -36,7 +37,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(errorCode.getHttpStatus())
-                .body(ApiResponse.error(errorCode.getMessage()));
+                .body(ApiResponse.error(errorCode.getCode(), errorCode.getMessage()));
     }
 
     /**
@@ -46,7 +47,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleBadCredentials(BadCredentialsException ex) {
         log.warn("Đăng nhập thất bại: Sai email hoặc mật khẩu");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("Email hoặc mật khẩu không chính xác"));
+                .body(ApiResponse.error(ErrorCode.INVALID_PASSWORD.getCode(), "Email hoặc mật khẩu không chính xác"));
     }
 
     /**
@@ -56,7 +57,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleAccountDisabled(Exception ex) {
         log.warn("Đăng nhập thất bại: Tài khoản đang bị khóa");
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error("Tài khoản của bạn đã bị khóa hoặc chưa kích hoạt"));
+                .body(ApiResponse.error(ErrorCode.FORBIDDEN_RESOURCE.getCode(), "Tài khoản của bạn đã bị khóa hoặc chưa kích hoạt"));
     }
 
     /**
@@ -66,7 +67,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
         log.warn("Truy cập bị từ chối: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error("Bạn không có quyền thực hiện hành động này"));
+                .body(ApiResponse.error(ErrorCode.FORBIDDEN_RESOURCE.getCode(), "Bạn không có quyền thực hiện hành động này"));
     }
 
     /**
@@ -80,7 +81,7 @@ public class GlobalExceptionHandler {
         );
 
         log.warn("Lỗi dữ liệu đầu vào: {}", errors);
-        ApiResponse<Map<String, String>> response = ApiResponse.error("Dữ liệu không hợp lệ");
+        ApiResponse<Map<String, String>> response = ApiResponse.error(4000, "Dữ liệu không hợp lệ");
         response.setData(errors);
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
@@ -93,7 +94,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(ConstraintViolationException ex) {
         log.warn("Lỗi tham số truy vấn: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(ex.getMessage()));
+                .body(ApiResponse.error(4000, ex.getMessage()));
     }
 
     /**
@@ -103,7 +104,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
         log.warn("Cấu trúc dữ liệu JSON không hợp lệ: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("Dữ liệu định dạng JSON gửi lên không hợp lệ hoặc sai kiểu dữ liệu"));
+                .body(ApiResponse.error(4001, "Dữ liệu định dạng JSON gửi lên không hợp lệ hoặc sai kiểu dữ liệu"));
     }
 
     /**
@@ -113,7 +114,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         log.warn("Tham số '{}' không đúng kiểu dữ liệu yêu cầu", ex.getName());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("Tham số trên đường dẫn không đúng kiểu dữ liệu"));
+                .body(ApiResponse.error(4002, "Tham số trên đường dẫn không đúng kiểu dữ liệu"));
     }
 
     /**
@@ -123,7 +124,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
         log.warn("Phương thức HTTP '{}' không được hỗ trợ", ex.getMethod());
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
-                .body(ApiResponse.error("Phương thức HTTP không được hỗ trợ cho đường dẫn này"));
+                .body(ApiResponse.error(4003, "Phương thức HTTP không được hỗ trợ cho đường dẫn này"));
     }
 
     /**
@@ -133,6 +134,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleGlobal(Exception ex) {
         log.error("Lỗi hệ thống chưa xác định: ", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("Lỗi hệ thống nội bộ, vui lòng thử lại sau"));
+                .body(ApiResponse.error(ErrorCode.UNCATEGORIZED_EXCEPTION.getCode(), "Lỗi hệ thống nội bộ, vui lòng thử lại sau"));
     }
 }

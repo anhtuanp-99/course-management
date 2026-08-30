@@ -4,11 +4,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
 /**
- * Response chuẩn cho tất cả API.
- * - success: trạng thái thành công hay thất bại.
- * - message: thông điệp mô tả (thường dùng cho lỗi).
- * - data: dữ liệu trả về (có thể là object, list, page...).
- * - JsonInclude NON_NULL để không hiển thị field null.
+ * Class đóng gói cấu trúc phản hồi chuẩn cho toàn bộ API hệ thống.
+ *
+ * @param <T> Kiểu dữ liệu của phần dữ liệu phản hồi (Payload)
  */
 @Getter
 @Setter
@@ -18,29 +16,52 @@ import lombok.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiResponse<T> {
 
+    @Builder.Default
+    private int code = 1000;
     private boolean success;
     private String message;
     private T data;
 
-    // Factory method tạo response thành công
+    /**
+     * Tạo response thành công với dữ liệu trả về.
+     */
     public static <T> ApiResponse<T> success(T data) {
         return ApiResponse.<T>builder()
+                .code(1000)
                 .success(true)
                 .data(data)
                 .build();
     }
 
+    /**
+     * Tạo response thành công với thông điệp và dữ liệu trả về.
+     */
     public static <T> ApiResponse<T> success(String message, T data) {
         return ApiResponse.<T>builder()
+                .code(1000)
                 .success(true)
                 .message(message)
                 .data(data)
                 .build();
     }
 
-    // Factory method tạo response thất bại
+    /**
+     * Tạo response thất bại mặc định với thông điệp lỗi (Code mặc định 9999).
+     */
     public static <T> ApiResponse<T> error(String message) {
         return ApiResponse.<T>builder()
+                .code(9999)
+                .success(false)
+                .message(message)
+                .build();
+    }
+
+    /**
+     * Tạo response thất bại với mã lỗi định danh (Custom Error Code) và thông điệp lỗi.
+     */
+    public static <T> ApiResponse<T> error(int code, String message) {
+        return ApiResponse.<T>builder()
+                .code(code)
                 .success(false)
                 .message(message)
                 .build();
