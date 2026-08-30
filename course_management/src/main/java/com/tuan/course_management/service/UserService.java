@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Dịch vụ quản lý thông tin người dùng và các nghiệp vụ tài khoản liên quan.
+ * Dịch vụ xử lý các nghiệp vụ quản lý thông tin người dùng và tài khoản hệ thống.
  */
 @Service
 @RequiredArgsConstructor
@@ -36,10 +36,12 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "id", "fullName", "email", "role", "active", "createdAt"
+    );
+
     /**
-     * Đăng ký tài khoản người dùng mới với vai trò mặc định.
-     *
-     * @param request Thông tin đăng ký từ phía Client
+     * Đăng ký tài khoản người dùng mới (Mặc định vai trò STUDENT).
      */
     @Transactional
     public void register(RegisterRequest request) {
@@ -62,28 +64,13 @@ public class UserService {
     }
 
     /**
-     * Lấy danh sách người dùng theo điều kiện lọc và phân trang bằng Specification.
-     *
-     * @param page Số trang truy vấn
-     * @param size Số lượng bản ghi trên một trang
-     * @param sortBy Cột thực hiện sắp xếp
-     * @param sortDir Hướng sắp xếp (ASC/DESC)
-     * @param role Lọc theo vai trò
-     * @param isActive Lọc theo trạng thái tài khoản
-     * @return PageResponse Danh sách người dùng dạng DTO phân trang
+     * Lấy danh sách người dùng theo điều kiện lọc và phân trang (Đáp ứng STT 4, 31).
      */
-    // Danh sách các trường được phép sắp xếp (Whitelist)
-    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
-            "id", "fullName", "email", "role", "active", "createdAt"
-    );
-
     public PageResponse<UserResponse> getUsers(int page, int size, String sortBy, String sortDir,
                                                Role role, Boolean isActive) {
-        log.debug("Truy vấn danh sách người dùng - Page: {}, Size: {}, SortBy: {}, Active: {}", page, size, sortBy, isActive);
+        log.debug("Truy vấn danh sách người dùng - Page: {}, Size: {}, Role: {}, Active: {}", page, size, role, isActive);
 
-        // Kiểm tra whitelist: Nếu trường sortBy không hợp lệ, tự động gán về "createdAt"
         String safeSortBy = ALLOWED_SORT_FIELDS.contains(sortBy) ? sortBy : "createdAt";
-
         Pageable pageable = PageUtils.createPageable(page, size, safeSortBy, sortDir, "createdAt");
 
         Specification<User> spec = (root, query, cb) -> {
@@ -104,10 +91,7 @@ public class UserService {
     }
 
     /**
-     * Lấy thông tin chi tiết một người dùng theo mã định danh.
-     *
-     * @param userId Mã định danh người dùng
-     * @return UserResponse Dữ liệu thông tin người dùng
+     * Lấy thông tin chi tiết một người dùng theo ID (Đáp ứng STT 5).
      */
     public UserResponse getUserById(Long userId) {
         log.debug("Truy vấn thông tin người dùng cho User ID: {}", userId);
@@ -117,14 +101,11 @@ public class UserService {
     }
 
     /**
-     * Khởi tạo tài khoản người dùng mới từ giao diện quản trị.
-     *
-     * @param request Thông tin tài khoản cần tạo
-     * @return UserResponse Dữ liệu tài khoản sau khi tạo
+     * Khởi tạo tài khoản người dùng mới từ màn hình ADMIN (Đáp ứng STT 6).
      */
     @Transactional
     public UserResponse createUser(CreateUserRequest request) {
-        log.debug("Thực hiện tạo tài khoản mới từ quản trị cho email: {}", request.getEmail());
+        log.debug("ADMIN tạo tài khoản mới cho email: {}", request.getEmail());
 
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
@@ -140,17 +121,13 @@ public class UserService {
                 .build();
 
         User savedUser = userRepository.save(user);
-        log.info("Tạo người dùng thành công cho User ID: {}", savedUser.getId());
+        log.info("ADMIN tạo người dùng thành công cho User ID: {}", savedUser.getId());
 
         return UserMapper.toResponse(savedUser);
     }
 
     /**
-     * Cập nhật thông tin hồ sơ của người dùng. Tận dụng cơ chế Dirty Checking của JPA.
-     *
-     * @param userId Mã định danh người dùng cần cập nhật
-     * @param request Dữ liệu hồ sơ mới
-     * @return UserResponse Thông tin người dùng sau khi cập nhật
+     * Cập nhật thông tin hồ sơ người dùng (Đáp ứng STT 26). Tận dụng JPA Dirty Checking.
      */
     @Transactional
     public UserResponse updateUser(Long userId, UpdateUserRequest request) {
@@ -160,7 +137,7 @@ public class UserService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         if (request.getFullName() != null) user.setFullName(request.getFullName());
-        if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
+        if (request.getEmail() != null && !request.getEmail().equalsIgnoreCase(user.getEmail())) {
             if (userRepository.existsByEmail(request.getEmail())) {
                 throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
             }
@@ -173,36 +150,33 @@ public class UserService {
     }
 
     /**
-     * Thay đổi vai trò người dùng trong hệ thống.
-     *
-     * @param userId Mã định danh người dùng bị thay đổi vai trò
-     * @param request Vai trò mới
-     * @param currentAdminId Mã định danh Admin đang thực hiện thao tác
-     * @return UserResponse Thông tin người dùng sau khi đổi vai trò
+     * Cập nhật vai trò người dùng (Đáp ứng STT 7).
+     * Quy tắc nghiệp vụ: ADMIN không được phép cập nhật vai trò của chính mình và của ADMIN khác.
      */
     @Transactional
     public UserResponse updateUserRole(Long userId, UpdateRoleRequest request, Long currentAdminId) {
-        log.debug("Thay đổi vai trò người dùng ID: {} bởi Admin ID: {}", userId, currentAdminId);
+        log.debug("Thao tác thay đổi vai trò User ID: {} bởi Admin ID: {}", userId, currentAdminId);
 
-        User user = userRepository.findById(userId)
+        User targetUser = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        if (user.getRole() == Role.ADMIN && userId.equals(currentAdminId)) {
-            throw new AppException(ErrorCode.CANNOT_CHANGE_OWN_ROLE);
+        // Kiểm tra quy tắc bảo vệ vai trò Quản trị viên
+        if (targetUser.getRole() == Role.ADMIN) {
+            if (userId.equals(currentAdminId)) {
+                throw new AppException(ErrorCode.CANNOT_CHANGE_OWN_ROLE);
+            } else {
+                throw new AppException(ErrorCode.CANNOT_UPDATE_ADMIN_ROLE);
+            }
         }
 
-        user.setRole(request.getRole());
-        log.info("Cập nhật vai trò thành công cho User ID: {}, Vai trò mới: {}", user.getId(), user.getRole());
+        targetUser.setRole(request.getRole());
+        log.info("Cập nhật vai trò thành công cho User ID: {}, Role mới: {}", targetUser.getId(), targetUser.getRole());
 
-        return UserMapper.toResponse(user);
+        return UserMapper.toResponse(targetUser);
     }
 
     /**
-     * Cập nhật trạng thái kích hoạt hoặc khóa tài khoản.
-     *
-     * @param userId Mã định danh người dùng
-     * @param request Trạng thái mới
-     * @return UserResponse Thông tin người dùng sau khi đổi trạng thái
+     * Kích hoạt hoặc vô hiệu hóa tài khoản người dùng (Đáp ứng STT 8).
      */
     @Transactional
     public UserResponse updateUserStatus(Long userId, UpdateStatusRequest request) {
@@ -218,9 +192,7 @@ public class UserService {
     }
 
     /**
-     * Xóa tài khoản người dùng khỏi cơ sở dữ liệu.
-     *
-     * @param userId Mã định danh người dùng cần xóa
+     * Xóa tài khoản người dùng khỏi hệ thống (Đáp ứng STT 9).
      */
     @Transactional
     public void deleteUser(Long userId) {
@@ -234,10 +206,7 @@ public class UserService {
     }
 
     /**
-     * Thay đổi mật khẩu người dùng.
-     *
-     * @param userId Mã định danh người dùng
-     * @param request Dữ liệu mật khẩu cũ và mật khẩu mới
+     * Thay đổi mật khẩu tài khoản người dùng (Đáp ứng STT 27).
      */
     @Transactional
     public void changePassword(Long userId, ChangePasswordRequest request) {
