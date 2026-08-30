@@ -18,11 +18,11 @@ public class CourseResponse {
     private Long id;
     private String title;
     private String description;
-    private Long teacher_id;    // ID của giảng viên phụ trách
+    private Long teacherId;    // ID của giảng viên phụ trách
     private String teacherName; // Tên giảng viên (đã map)
     private CourseStatus status;
-    private LocalDateTime createAt;
-    private LocalDateTime updateAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
 
 }
