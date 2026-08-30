@@ -1,24 +1,27 @@
 package com.tuan.course_management.exception;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 
 /**
- * Quản lý tập trung toàn bộ mã lỗi, thông báo và HTTP Status của hệ thống.
+ * Enum quản lý tập trung toàn bộ mã lỗi, thông báo và HTTP Status của hệ thống.
  */
 @Getter
+@RequiredArgsConstructor
 public enum ErrorCode {
 
     // ================= AUTH & USER =================
     USER_NOT_FOUND(1001, "Không tìm thấy người dùng", HttpStatus.NOT_FOUND),
-    EMAIL_ALREADY_EXISTS(1002, "Email đã được sử dụng", HttpStatus.CONFLICT),
-    INVALID_PASSWORD(1003, "Mật khẩu không chính xác", HttpStatus.BAD_REQUEST),
-    UNAUTHORIZED_ACCESS(1004, "Bạn cần đăng nhập để truy cập", HttpStatus.UNAUTHORIZED),
+    EMAIL_ALREADY_EXISTS(1002, "Email đã được sử dụng trong hệ thống", HttpStatus.CONFLICT),
+    INVALID_PASSWORD(1003, "Mật khẩu hiện tại không chính xác", HttpStatus.BAD_REQUEST),
+    UNAUTHORIZED_ACCESS(1004, "Bạn cần đăng nhập để truy cập tài nguyên này", HttpStatus.UNAUTHORIZED),
     FORBIDDEN_RESOURCE(1005, "Bạn không có quyền thực hiện thao tác này", HttpStatus.FORBIDDEN),
     CANNOT_CHANGE_OWN_ROLE(1006, "Bạn không thể thay đổi vai trò của chính mình", HttpStatus.BAD_REQUEST),
     ACCOUNT_DISABLED(1007, "Tài khoản của bạn đã bị khóa hoặc chưa kích hoạt", HttpStatus.FORBIDDEN),
     INVALID_TOKEN(1008, "Token không hợp lệ hoặc đã hết hạn", HttpStatus.UNAUTHORIZED),
     TOKEN_EXPIRED(1009, "Token đã hết hạn", HttpStatus.UNAUTHORIZED),
+    CANNOT_UPDATE_ADMIN_ROLE(1010, "Không được phép thay đổi vai trò của Quản trị viên khác", HttpStatus.FORBIDDEN),
 
     // ================= COURSE =================
     COURSE_NOT_FOUND(2001, "Không tìm thấy khóa học", HttpStatus.NOT_FOUND),
@@ -34,24 +37,24 @@ public enum ErrorCode {
     LESSON_ACCESS_DENIED(3004, "Bạn không có quyền quản lý bài học này", HttpStatus.FORBIDDEN),
 
     // ================= ENROLLMENT =================
-    ENROLLMENT_NOT_FOUND(4001, "Không tìm thấy đăng ký khóa học", HttpStatus.NOT_FOUND),
-    ALREADY_ENROLLED(4002, "Bạn đã đăng ký khóa học này", HttpStatus.CONFLICT),
+    ENROLLMENT_NOT_FOUND(4001, "Không tìm thấy thông tin đăng ký khóa học", HttpStatus.NOT_FOUND),
+    ALREADY_ENROLLED(4002, "Bạn đã đăng ký khóa học này trước đó", HttpStatus.CONFLICT),
     COURSE_NOT_PUBLISHED_FOR_ENROLL(4003, "Khóa học chưa được xuất bản, không thể đăng ký", HttpStatus.BAD_REQUEST),
-    LESSON_ALREADY_COMPLETED(4004, "Bài học đã được hoàn thành", HttpStatus.CONFLICT),
+    LESSON_ALREADY_COMPLETED(4004, "Bài học đã được đánh dấu hoàn thành", HttpStatus.CONFLICT),
     LESSON_NOT_IN_COURSE(4005, "Bài học không thuộc khóa học đã đăng ký", HttpStatus.BAD_REQUEST),
 
     // ================= NOTIFICATION =================
     NOTIFICATION_NOT_FOUND(5001, "Không tìm thấy thông báo", HttpStatus.NOT_FOUND),
-    NOTIFICATION_ACCESS_DENIED(5002, "Bạn không có quyền xóa thông báo này", HttpStatus.FORBIDDEN),
+    NOTIFICATION_ACCESS_DENIED(5002, "Bạn không có quyền thao tác với thông báo này", HttpStatus.FORBIDDEN),
 
     // ================= REVIEW =================
     REVIEW_NOT_FOUND(6001, "Không tìm thấy đánh giá", HttpStatus.NOT_FOUND),
-    ALREADY_REVIEWED(6002, "Bạn đã đánh giá khóa học này", HttpStatus.CONFLICT),
-    REVIEW_ACCESS_DENIED(6003, "Bạn không có quyền sửa/xóa đánh giá này", HttpStatus.FORBIDDEN),
-    INVALID_RATING(6004, "Số sao đánh giá phải từ 1 đến 5", HttpStatus.BAD_REQUEST),
+    ALREADY_REVIEWED(6002, "Bạn đã gửi đánh giá cho khóa học này rồi", HttpStatus.CONFLICT),
+    REVIEW_ACCESS_DENIED(6003, "Bạn không có quyền sửa hoặc xóa đánh giá này", HttpStatus.FORBIDDEN),
+    INVALID_RATING(6004, "Số sao đánh giá phải nằm trong khoảng từ 1 đến 5", HttpStatus.BAD_REQUEST),
 
     // ================= REPORT =================
-    REPORT_DATA_NOT_FOUND(7001, "Không tìm thấy dữ liệu báo cáo", HttpStatus.NOT_FOUND),
+    REPORT_DATA_NOT_FOUND(7001, "Không tìm thấy dữ liệu báo cáo thống kê", HttpStatus.NOT_FOUND),
 
     // ================= HTTP & REQUEST VALIDATION =================
     INVALID_INPUT_DATA(8000, "Dữ liệu đầu vào không hợp lệ", HttpStatus.BAD_REQUEST),
@@ -65,10 +68,4 @@ public enum ErrorCode {
     private final int code;
     private final String message;
     private final HttpStatus httpStatus;
-
-    ErrorCode(int code, String message, HttpStatus httpStatus) {
-        this.code = code;
-        this.message = message;
-        this.httpStatus = httpStatus;
-    }
 }
