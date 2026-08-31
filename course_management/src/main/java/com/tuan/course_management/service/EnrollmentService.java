@@ -133,18 +133,27 @@ public class EnrollmentService {
             throw new AppException(ErrorCode.LESSON_NOT_IN_COURSE);
         }
 
-        if (lessonProgressRepository.existsByEnrollmentIdAndLessonId(enrollmentId, lessonId)) {
+        // Tìm bản ghi tiến độ đã khởi tạo sẵn hoặc tạo đối tượng mới nếu chưa có
+        LessonProgress progress = lessonProgressRepository
+                .findByEnrollmentIdAndLessonId(enrollmentId, lessonId)
+                .orElseGet(() -> LessonProgress.builder()
+                        .enrollment(enrollment)
+                        .lesson(lesson)
+                        .build());
+
+        // Kiểm tra chính xác cờ completed của bản ghi tiến độ
+        if (progress.isCompleted()) {
             throw new AppException(ErrorCode.LESSON_ALREADY_COMPLETED);
         }
 
-        LessonProgress progress = LessonProgress.builder()
-                .enrollment(enrollment)
-                .lesson(lesson)
-                .completed(true)
-                .completedAt(LocalDateTime.now())
-                .build();
+        progress.setCompleted(true);
+        progress.setCompletedAt(LocalDateTime.now());
 
-        lessonProgressRepository.save(progress);
+        // Nếu là bản ghi khởi tạo mới thì lưu vào DB, bản ghi cũ tận dụng Dirty Checking
+        if (progress.getId() == null) {
+            lessonProgressRepository.save(progress);
+        }
+
         log.info("Đánh dấu hoàn thành bài học thành công. Enrollment ID: {}, Lesson ID: {}", enrollmentId, lessonId);
     }
 
