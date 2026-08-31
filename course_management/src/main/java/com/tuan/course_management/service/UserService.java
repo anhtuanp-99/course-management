@@ -19,6 +19,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,11 +65,12 @@ public class UserService {
     }
 
     /**
-     * Lấy danh sách người dùng theo điều kiện lọc và phân trang (Đáp ứng STT 4, 31).
+     * Lấy danh sách người dùng có phân trang, tìm kiếm và lọc động (Đáp ứng STT 4, 31).
      */
     public PageResponse<UserResponse> getUsers(int page, int size, String sortBy, String sortDir,
-                                               Role role, Boolean isActive) {
-        log.debug("Truy vấn danh sách người dùng - Page: {}, Size: {}, Role: {}, Active: {}", page, size, role, isActive);
+                                               String search, Role role, Boolean isActive) {
+        log.debug("Truy vấn danh sách người dùng - Page: {}, Size: {}, Search: {}, Role: {}, Active: {}",
+                page, size, search, role, isActive);
 
         String safeSortBy = ALLOWED_SORT_FIELDS.contains(sortBy) ? sortBy : "createdAt";
         Pageable pageable = PageUtils.createPageable(page, size, safeSortBy, sortDir, "createdAt");
@@ -76,9 +78,21 @@ public class UserService {
         Specification<User> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
+            // 1. Tìm kiếm theo từ khóa (fullName hoặc email)
+            if (StringUtils.hasText(search)) {
+                String keyword = "%" + search.toLowerCase().trim() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("fullName")), keyword),
+                        cb.like(cb.lower(root.get("email")), keyword)
+                ));
+            }
+
+            // 2. Lọc theo vai trò (ROLE)
             if (role != null) {
                 predicates.add(cb.equal(root.get("role"), role));
             }
+
+            // 3. Lọc theo trạng thái hoạt động (ACTIVE)
             if (isActive != null) {
                 predicates.add(cb.equal(root.get("active"), isActive));
             }
@@ -95,8 +109,7 @@ public class UserService {
      */
     public UserResponse getUserById(Long userId) {
         log.debug("Truy vấn thông tin người dùng cho User ID: {}", userId);
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        User user = getUserEntityById(userId);
         return UserMapper.toResponse(user);
     }
 
@@ -133,8 +146,7 @@ public class UserService {
     public UserResponse updateUser(Long userId, UpdateUserRequest request) {
         log.debug("Thực hiện cập nhật thông tin hồ sơ cho User ID: {}", userId);
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        User user = getUserEntityById(userId);
 
         if (request.getFullName() != null) user.setFullName(request.getFullName());
         if (request.getEmail() != null && !request.getEmail().equalsIgnoreCase(user.getEmail())) {
@@ -157,10 +169,8 @@ public class UserService {
     public UserResponse updateUserRole(Long userId, UpdateRoleRequest request, Long currentAdminId) {
         log.debug("Thao tác thay đổi vai trò User ID: {} bởi Admin ID: {}", userId, currentAdminId);
 
-        User targetUser = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        User targetUser = getUserEntityById(userId);
 
-        // Kiểm tra quy tắc bảo vệ vai trò Quản trị viên
         if (targetUser.getRole() == Role.ADMIN) {
             if (userId.equals(currentAdminId)) {
                 throw new AppException(ErrorCode.CANNOT_CHANGE_OWN_ROLE);
@@ -182,8 +192,7 @@ public class UserService {
     public UserResponse updateUserStatus(Long userId, UpdateStatusRequest request) {
         log.debug("Thay đổi trạng thái hoạt động cho User ID: {}", userId);
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        User user = getUserEntityById(userId);
 
         user.setActive(request.getActive());
         log.info("Cập nhật trạng thái thành công cho User ID: {}, Active: {}", user.getId(), user.isActive());
@@ -212,8 +221,7 @@ public class UserService {
     public void changePassword(Long userId, ChangePasswordRequest request) {
         log.debug("Thực hiện đổi mật khẩu cho User ID: {}", userId);
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        User user = getUserEntityById(userId);
 
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
             throw new AppException(ErrorCode.INVALID_PASSWORD);
@@ -221,5 +229,30 @@ public class UserService {
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         log.info("Đổi mật khẩu thành công cho User ID: {}", userId);
+    }
+
+    // =========================================================================
+    // HELPER METHODS (Dùng nội bộ và chia sẻ liên Service)
+    // =========================================================================
+
+    /**
+     * Helper Method: Lấy Entity User theo ID, tự động throw AppException nếu không tồn tại.
+     */
+    public User getUserEntityById(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    /**
+     * Helper Method: Lấy Entity User và validate chắc chắn có vai trò TEACHER.
+     * Dùng cho CourseService/LessonService khi gán giảng viên phụ trách.
+     */
+    public User getTeacherEntityById(Long teacherId) {
+        User teacher = getUserEntityById(teacherId);
+        if (teacher.getRole() != Role.TEACHER) {
+            log.warn("User ID: {} có vai trò {} nhưng không phải TEACHER", teacherId, teacher.getRole());
+            throw new AppException(ErrorCode.USER_NOT_TEACHER);
+        }
+        return teacher;
     }
 }
