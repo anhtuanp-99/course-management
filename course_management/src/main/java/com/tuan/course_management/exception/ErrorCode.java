@@ -22,6 +22,7 @@ public enum ErrorCode {
     INVALID_TOKEN(1008, "Token không hợp lệ hoặc đã hết hạn", HttpStatus.UNAUTHORIZED),
     TOKEN_EXPIRED(1009, "Token đã hết hạn", HttpStatus.UNAUTHORIZED),
     CANNOT_UPDATE_ADMIN_ROLE(1010, "Không được phép thay đổi vai trò của Quản trị viên khác", HttpStatus.FORBIDDEN),
+    USER_NOT_TEACHER(1011, "Người dùng được gán không phải là Giảng viên", HttpStatus.BAD_REQUEST),
 
     // ================= COURSE =================
     COURSE_NOT_FOUND(2001, "Không tìm thấy khóa học", HttpStatus.NOT_FOUND),
