@@ -14,5 +14,5 @@ import lombok.*;
 public class EnrollmentRequest {
 
     @NotNull(message = "ID khóa học không được để trống")
-    private Long id;
+    private Long courseId;
 }
