@@ -117,7 +117,7 @@ public class UserService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(request.getRole())
                 .phone(request.getPhone())
-                .active(request.getIsActive() != null ? request.getIsActive() : true)
+                .active(request.getActive() != null ? request.getActive() : true)
                 .build();
 
         User savedUser = userRepository.save(user);
