@@ -16,7 +16,6 @@ import com.tuan.course_management.exception.ErrorCode;
 import com.tuan.course_management.mapper.CourseMapper;
 import com.tuan.course_management.repository.CourseRepository;
 import com.tuan.course_management.repository.LessonRepository;
-import com.tuan.course_management.repository.UserRepository;
 import com.tuan.course_management.util.PageUtils;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
@@ -43,8 +42,8 @@ import java.util.Set;
 public class CourseService {
 
     private final CourseRepository courseRepository;
-    private final UserRepository userRepository;
     private final LessonRepository lessonRepository;
+    private final UserService userService;
 
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
             "id", "title", "status", "createdAt"
@@ -69,10 +68,8 @@ public class CourseService {
 
             // 1. Phân quyền xem theo Trạng thái
             if (!isAdmin) {
-                // Người dùng không phải ADMIN (STUDENT, TEACHER) chỉ được xem khóa học PUBLISHED
                 predicates.add(cb.equal(root.get("status"), CourseStatus.PUBLISHED));
             } else if (status != null) {
-                // ADMIN có quyền lọc theo bất kỳ trạng thái nào truyền lên
                 predicates.add(cb.equal(root.get("status"), status));
             }
 
@@ -114,13 +111,13 @@ public class CourseService {
 
     /**
      * Tạo mới khóa học (ADMIN). Trạng thái mặc định là DRAFT.
+     * Validate nghiêm ngặt người phụ trách phải có vai trò TEACHER.
      */
     @Transactional
     public CourseResponse createCourse(CourseCreateRequest request) {
         log.debug("Bắt đầu tạo khóa học mới: title={}, teacherId={}", request.getTitle(), request.getTeacherId());
 
-        User teacher = userRepository.findById(request.getTeacherId())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        User teacher = userService.getTeacherEntityById(request.getTeacherId());
 
         Course course = Course.builder()
                 .title(request.getTitle())
@@ -145,11 +142,14 @@ public class CourseService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
 
-        if (request.getTitle() != null) course.setTitle(request.getTitle());
-        if (request.getDescription() != null) course.setDescription(request.getDescription());
+        if (request.getTitle() != null) {
+            course.setTitle(request.getTitle());
+        }
+        if (request.getDescription() != null) {
+            course.setDescription(request.getDescription());
+        }
         if (request.getTeacherId() != null && !request.getTeacherId().equals(course.getTeacher().getId())) {
-            User teacher = userRepository.findById(request.getTeacherId())
-                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+            User teacher = userService.getTeacherEntityById(request.getTeacherId());
             course.setTeacher(teacher);
         }
 
@@ -188,7 +188,7 @@ public class CourseService {
     }
 
     /**
-     * Helper Method kiểm tra xem người dùng hiện tại trong Security Context có vai trò ADMIN hay không.
+     * Helper Method kiểm tra người dùng hiện tại trong Security Context có phải ADMIN không.
      */
     private boolean isCurrentUserAdmin() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -196,7 +196,6 @@ public class CourseService {
             return false;
         }
         return auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals(Role.ADMIN.getAuthority())
-                        || a.getAuthority().equals(Role.ADMIN.name()));
+                .anyMatch(a -> a.getAuthority().equals(Role.ADMIN.getAuthority()));
     }
 }
