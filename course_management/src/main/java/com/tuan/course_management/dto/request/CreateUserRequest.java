@@ -33,7 +33,7 @@ public class CreateUserRequest {
     private Role role;
 
     // Nếu không truyền isActive, mặc định true
-    private Boolean isActive = true;
+    private Boolean active = true;
 
     @Size(max = 20, message = "Số điện thoại không quá 20 ký tự")
     private String phone;
