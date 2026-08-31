@@ -1,61 +1,63 @@
 # Course Management System
 
-Hệ thống quản lý khóa học trực tuyến được xây dựng bằng **Spring Boot**, hỗ trợ phân quyền theo vai trò (Admin, Teacher,
-Student) cho các nghiệp vụ quản lý khóa học, bài học, đăng ký học, đánh giá và thông báo.
+🇻🇳 [Phiên bản Tiếng Việt](README.md)
 
-## Mục lục
+An online course management system built with **Spring Boot**, supporting role-based access control (Admin, Teacher,
+Student) for managing courses, lessons, enrollments, reviews, and notifications.
 
-- [Tính năng chính](#tính-năng-chính)
-- [Công nghệ sử dụng](#công-nghệ-sử-dụng)
-- [Cấu trúc thư mục](#cấu-trúc-thư-mục)
-- [Yêu cầu hệ thống](#yêu-cầu-hệ-thống)
-- [Cài đặt và chạy dự án](#cài-đặt-và-chạy-dự-án)
-- [Cấu hình](#cấu-hình)
-- [Phân quyền](#phân-quyền)
+## Table of Contents
+
+- [Key Features](#key-features)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Requirements](#requirements)
+- [Getting Started](#getting-started)
+- [Configuration](#configuration)
+- [Authorization](#authorization)
 - [API Endpoints](#api-endpoints)
-- [Kiểm thử API với Postman](#kiểm-thử-api-với-postman)
+- [Testing with Postman](#testing-with-postman)
 
-## Tính năng chính
+## Key Features
 
-- Xác thực và phân quyền người dùng bằng JWT (Access Token)
-- Quản lý người dùng: tạo, cập nhật vai trò, kích hoạt/vô hiệu hóa, xóa
-- Quản lý khóa học: tạo, cập nhật, đổi trạng thái (DRAFT, PUBLISHED, ARCHIVED), xóa
-- Quản lý bài học trong từng khóa học, ẩn/hiện nội dung theo trạng thái xuất bản
-- Đăng ký khóa học và theo dõi tiến độ học tập theo từng bài học
-- Đánh giá/bình luận khóa học
-- Thông báo hệ thống cho người dùng
-- Báo cáo thống kê: khóa học phổ biến, tiến độ học viên, tổng quan giảng viên
-- Tìm kiếm và lọc khóa học theo từ khóa, giảng viên, trạng thái
+- User authentication and authorization via JWT (Access Token)
+- User management: create, update role, activate/deactivate, delete
+- Course management: create, update, change status (DRAFT, PUBLISHED, ARCHIVED), delete
+- Lesson management within courses, with visibility control based on publish status
+- Course enrollment and lesson-by-lesson progress tracking
+- Course reviews and ratings
+- System notifications for users
+- Reporting: top courses, student progress, teacher course overview
+- Course search and filtering by keyword, teacher, or status
 
-## Công nghệ sử dụng
+## Tech Stack
 
-| Thành phần        | Công nghệ             |
-|-------------------|-----------------------|
-| Ngôn ngữ          | Java                  |
-| Framework         | Spring Boot           |
-| Bảo mật           | Spring Security + JWT |
-| Truy xuất dữ liệu | Spring Data JPA       |
-| Cơ sở dữ liệu     | PostgreSQL            |
-| Build tool        | Gradle                |
-| Kiểm thử API      | Postman               |
+| Component   | Technology            |
+|-------------|-----------------------|
+| Language    | Java                  |
+| Framework   | Spring Boot           |
+| Security    | Spring Security + JWT |
+| Data access | Spring Data JPA       |
+| Database    | PostgreSQL            |
+| Build tool  | Gradle                |
+| API testing | Postman               |
 
-## Cấu trúc thư mục
+## Project Structure
 
 ```
 src/main/java/com/tuan/course_management
-├── config              # Cấu hình Spring Security, khởi tạo dữ liệu mặc định
+├── config              # Spring Security config, default data initialization
 ├── controller           # REST controllers
 ├── dto
-│   ├── request           # Request payload
-│   └── response          # Response payload (bao gồm response cho báo cáo)
+│   ├── request           # Request payloads
+│   └── response          # Response payloads (including report responses)
 ├── entity                # JPA entities
-├── enums                 # Enum: Role, CourseStatus
-├── exception             # Xử lý exception tập trung, mã lỗi
-├── mapper                # Chuyển đổi entity <-> DTO
+├── enums                 # Enums: Role, CourseStatus
+├── exception             # Centralized exception handling, error codes
+├── mapper                # Entity <-> DTO mapping
 ├── repository            # Spring Data JPA repositories
-├── security              # JWT provider, filter, UserDetails, xử lý lỗi xác thực
+├── security              # JWT provider, filter, UserDetails, auth error handling
 ├── service                # Business logic
-└── util                   # Tiện ích dùng chung (phân trang,...)
+└── util                   # Shared utilities (pagination, etc.)
 
 src/main/resources
 ├── application.properties
@@ -65,29 +67,29 @@ src/main/resources
 └── logback-spring.xml
 ```
 
-## Yêu cầu hệ thống
+## Requirements
 
-- JDK 17 trở lên
-- PostgreSQL 13 trở lên
-- Gradle (có thể dùng Gradle Wrapper đi kèm project, không cần cài riêng)
+- JDK 17 or higher
+- PostgreSQL 13 or higher
+- Gradle (the bundled Gradle Wrapper works out of the box, no separate install needed)
 
-## Cài đặt và chạy dự án
+## Getting Started
 
-1. Clone dự án về máy:
+1. Clone the repository:
 
 ```bash
 git clone <repository-url>
 cd course_management
 ```
 
-2. Tạo database PostgreSQL:
+2. Create a PostgreSQL database:
 
 ```sql
 CREATE
 DATABASE course_management;
 ```
 
-3. Cấu hình kết nối database trong `src/main/resources/application-local.properties` (hoặc profile bạn sử dụng):
+3. Configure the database connection in `src/main/resources/application-local.properties` (or the profile you use):
 
 ```properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/course_management
@@ -95,7 +97,7 @@ spring.datasource.username=<your_username>
 spring.datasource.password=<your_password>
 ```
 
-4. Build project:
+4. Build the project:
 
 ```bash
 # Windows
@@ -105,7 +107,7 @@ spring.datasource.password=<your_password>
 ./gradlew build
 ```
 
-5. Chạy ứng dụng:
+5. Run the application:
 
 ```bash
 # Windows
@@ -115,36 +117,36 @@ spring.datasource.password=<your_password>
 ./gradlew bootRun
 ```
 
-Mặc định ứng dụng chạy tại `http://localhost:8080`.
+By default, the application runs at `http://localhost:8080`.
 
-## Cấu hình
+## Configuration
 
-Dự án hỗ trợ nhiều profile:
+The project supports multiple profiles:
 
-| Profile | Mục đích                      |
-|---------|-------------------------------|
-| local   | Chạy trên máy cá nhân         |
-| dev     | Môi trường phát triển         |
-| prod    | Môi trường triển khai thực tế |
+| Profile | Purpose                           |
+|---------|-----------------------------------|
+| local   | Local development on your machine |
+| dev     | Development environment           |
+| prod    | Production environment            |
 
-Chọn profile khi chạy:
+Select a profile when running:
 
 ```bash
 ./gradlew bootRun --args='--spring.profiles.active=local'
 ```
 
-## Phân quyền
+## Authorization
 
-Hệ thống sử dụng JWT kèm các vai trò sau:
+The system uses JWT with the following roles:
 
-| Vai trò | Mô tả                                                      |
-|---------|------------------------------------------------------------|
-| ADMIN   | Toàn quyền quản trị hệ thống                               |
-| TEACHER | Quản lý khóa học và bài học được phân công                 |
-| STUDENT | Đăng ký khóa học, học và đánh giá                          |
-| OWNER   | Chủ sở hữu tài nguyên (tự quản lý hồ sơ/đánh giá của mình) |
+| Role    | Description                                        |
+|---------|----------------------------------------------------|
+| ADMIN   | Full system administration rights                  |
+| TEACHER | Manages assigned courses and lessons               |
+| STUDENT | Enrolls in courses, learns, and leaves reviews     |
+| OWNER   | Resource owner (manages their own profile/reviews) |
 
-Client cần gửi token trong header của các request cần xác thực:
+Clients must send the token in the header for authenticated requests:
 
 ```
 Authorization: Bearer <access_token>
@@ -154,94 +156,95 @@ Authorization: Bearer <access_token>
 
 ### Auth
 
-| Method | Endpoint         | Quyền  | Mô tả                             |
-|--------|------------------|--------|-----------------------------------|
-| POST   | /api/auth/login  | PUBLIC | Đăng nhập, nhận JWT               |
-| POST   | /api/auth/verify | AUTH   | Xác thực token                    |
-| GET    | /api/auth/me     | AUTH   | Lấy thông tin người dùng hiện tại |
-| POST   | /api/auth/logout | AUTH   | Đăng xuất                         |
+| Method | Endpoint         | Access | Description           |
+|--------|------------------|--------|-----------------------|
+| POST   | /api/auth/login  | PUBLIC | Log in, receive a JWT |
+| POST   | /api/auth/verify | AUTH   | Verify a token        |
+| GET    | /api/auth/me     | AUTH   | Get current user info |
+| POST   | /api/auth/logout | AUTH   | Log out               |
 
 ### Users
 
-| Method | Endpoint                      | Quyền        | Mô tả                           |
-|--------|-------------------------------|--------------|---------------------------------|
-| GET    | /api/users                    | ADMIN        | Danh sách người dùng            |
-| GET    | /api/users?status={status}    | ADMIN        | Lọc theo trạng thái             |
-| GET    | /api/users/{user_id}          | ADMIN        | Chi tiết người dùng             |
-| POST   | /api/users                    | ADMIN        | Tạo người dùng mới              |
-| PUT    | /api/users/{user_id}          | OWNER, ADMIN | Cập nhật thông tin cá nhân      |
-| PUT    | /api/users/{user_id}/role     | ADMIN        | Cập nhật vai trò                |
-| PUT    | /api/users/{user_id}/status   | ADMIN        | Kích hoạt/vô hiệu hóa tài khoản |
-| PUT    | /api/users/{user_id}/password | OWNER, ADMIN | Đổi mật khẩu                    |
-| DELETE | /api/users/{user_id}          | ADMIN        | Xóa người dùng                  |
+| Method | Endpoint                      | Access       | Description                 |
+|--------|-------------------------------|--------------|-----------------------------|
+| GET    | /api/users                    | ADMIN        | List users                  |
+| GET    | /api/users?status={status}    | ADMIN        | Filter users by status      |
+| GET    | /api/users/{user_id}          | ADMIN        | Get user details            |
+| POST   | /api/users                    | ADMIN        | Create a new user           |
+| PUT    | /api/users/{user_id}          | OWNER, ADMIN | Update personal info        |
+| PUT    | /api/users/{user_id}/role     | ADMIN        | Update user role            |
+| PUT    | /api/users/{user_id}/status   | ADMIN        | Activate/deactivate account |
+| PUT    | /api/users/{user_id}/password | OWNER, ADMIN | Change password             |
+| DELETE | /api/users/{user_id}          | ADMIN        | Delete a user               |
 
 ### Courses
 
-| Method | Endpoint                             | Quyền | Mô tả                        |
-|--------|--------------------------------------|-------|------------------------------|
-| GET    | /api/courses                         | AUTH  | Danh sách khóa học           |
-| GET    | /api/courses?search={keyword}        | AUTH  | Tìm kiếm theo từ khóa        |
-| GET    | /api/courses?teacher_id={teacher_id} | AUTH  | Lọc theo giảng viên          |
-| GET    | /api/courses?status={status}         | AUTH  | Lọc theo trạng thái          |
-| GET    | /api/courses/{course_id}             | AUTH  | Chi tiết khóa học            |
-| POST   | /api/courses                         | ADMIN | Tạo khóa học                 |
-| PUT    | /api/courses/{course_id}             | ADMIN | Cập nhật khóa học            |
-| PUT    | /api/courses/{course_id}/status      | ADMIN | Cập nhật trạng thái khóa học |
-| DELETE | /api/courses/{course_id}             | ADMIN | Xóa khóa học                 |
+| Method | Endpoint                             | Access | Description          |
+|--------|--------------------------------------|--------|----------------------|
+| GET    | /api/courses                         | AUTH   | List courses         |
+| GET    | /api/courses?search={keyword}        | AUTH   | Search by keyword    |
+| GET    | /api/courses?teacher_id={teacher_id} | AUTH   | Filter by teacher    |
+| GET    | /api/courses?status={status}         | AUTH   | Filter by status     |
+| GET    | /api/courses/{course_id}             | AUTH   | Get course details   |
+| POST   | /api/courses                         | ADMIN  | Create a course      |
+| PUT    | /api/courses/{course_id}             | ADMIN  | Update a course      |
+| PUT    | /api/courses/{course_id}/status      | ADMIN  | Update course status |
+| DELETE | /api/courses/{course_id}             | ADMIN  | Delete a course      |
 
 ### Lessons
 
-| Method | Endpoint                                 | Quyền          | Mô tả                        |
-|--------|------------------------------------------|----------------|------------------------------|
-| GET    | /api/courses/{course_id}/lessons         | AUTH           | Danh sách bài học            |
-| GET    | /api/lessons/{lesson_id}                 | AUTH           | Chi tiết bài học             |
-| GET    | /api/lessons/{lesson_id}/content_preview | AUTH           | Xem trước nội dung bài học   |
-| POST   | /api/courses/{course_id}/lessons         | TEACHER, ADMIN | Thêm bài học                 |
-| PUT    | /api/lessons/{lesson_id}                 | TEACHER, ADMIN | Cập nhật bài học             |
-| PUT    | /api/lessons/{lesson_id}/publish         | TEACHER, ADMIN | Cập nhật trạng thái xuất bản |
-| DELETE | /api/lessons/{lesson_id}                 | TEACHER, ADMIN | Xóa bài học                  |
+| Method | Endpoint                                 | Access         | Description              |
+|--------|------------------------------------------|----------------|--------------------------|
+| GET    | /api/courses/{course_id}/lessons         | AUTH           | List lessons in a course |
+| GET    | /api/lessons/{lesson_id}                 | AUTH           | Get lesson details       |
+| GET    | /api/lessons/{lesson_id}/content_preview | AUTH           | Preview lesson content   |
+| POST   | /api/courses/{course_id}/lessons         | TEACHER, ADMIN | Add a lesson             |
+| PUT    | /api/lessons/{lesson_id}                 | TEACHER, ADMIN | Update a lesson          |
+| PUT    | /api/lessons/{lesson_id}/publish         | TEACHER, ADMIN | Update publish status    |
+| DELETE | /api/lessons/{lesson_id}                 | TEACHER, ADMIN | Delete a lesson          |
 
 ### Enrollments
 
-| Method | Endpoint                                                     | Quyền   | Mô tả                         |
-|--------|--------------------------------------------------------------|---------|-------------------------------|
-| GET    | /api/enrollments                                             | STUDENT | Danh sách khóa học đã đăng ký |
-| POST   | /api/enrollments                                             | STUDENT | Đăng ký khóa học              |
-| GET    | /api/enrollments/{enrollment_id}                             | STUDENT | Chi tiết đăng ký/tiến độ      |
-| PUT    | /api/enrollments/{enrollment_id}/complete_lesson/{lesson_id} | STUDENT | Đánh dấu hoàn thành bài học   |
+| Method | Endpoint                                                     | Access  | Description                     |
+|--------|--------------------------------------------------------------|---------|---------------------------------|
+| GET    | /api/enrollments                                             | STUDENT | List enrolled courses           |
+| POST   | /api/enrollments                                             | STUDENT | Enroll in a course              |
+| GET    | /api/enrollments/{enrollment_id}                             | STUDENT | Get enrollment/progress details |
+| PUT    | /api/enrollments/{enrollment_id}/complete_lesson/{lesson_id} | STUDENT | Mark a lesson as completed      |
 
 ### Reviews
 
-| Method | Endpoint                         | Quyền        | Mô tả                       |
-|--------|----------------------------------|--------------|-----------------------------|
-| GET    | /api/courses/{course_id}/reviews | AUTH         | Danh sách đánh giá khóa học |
-| POST   | /api/courses/{course_id}/reviews | STUDENT      | Gửi đánh giá                |
-| PUT    | /api/reviews/{review_id}         | OWNER, ADMIN | Cập nhật đánh giá           |
-| DELETE | /api/reviews/{review_id}         | OWNER, ADMIN | Xóa đánh giá                |
+| Method | Endpoint                         | Access       | Description         |
+|--------|----------------------------------|--------------|---------------------|
+| GET    | /api/courses/{course_id}/reviews | AUTH         | List course reviews |
+| POST   | /api/courses/{course_id}/reviews | STUDENT      | Submit a review     |
+| PUT    | /api/reviews/{review_id}         | OWNER, ADMIN | Update a review     |
+| DELETE | /api/reviews/{review_id}         | OWNER, ADMIN | Delete a review     |
 
 ### Notifications
 
-| Method | Endpoint                                  | Quyền | Mô tả               |
-|--------|-------------------------------------------|-------|---------------------|
-| GET    | /api/notifications                        | AUTH  | Danh sách thông báo |
-| PUT    | /api/notifications/{notification_id}/read | AUTH  | Đánh dấu đã đọc     |
-| POST   | /api/notifications                        | ADMIN | Tạo thông báo mới   |
-| DELETE | /api/notifications/{notification_id}      | ADMIN | Xóa thông báo       |
+| Method | Endpoint                                  | Access | Description                 |
+|--------|-------------------------------------------|--------|-----------------------------|
+| GET    | /api/notifications                        | AUTH   | List notifications          |
+| PUT    | /api/notifications/{notification_id}/read | AUTH   | Mark a notification as read |
+| POST   | /api/notifications                        | ADMIN  | Create a new notification   |
+| DELETE | /api/notifications/{notification_id}      | ADMIN  | Delete a notification       |
 
 ### Reports
 
-| Method | Endpoint                                           | Quyền | Mô tả                             |
-|--------|----------------------------------------------------|-------|-----------------------------------|
-| GET    | /api/reports/top_courses                           | ADMIN | Khóa học phổ biến nhất            |
-| GET    | /api/reports/student_progress/{student_id}         | ADMIN | Tiến độ học của một sinh viên     |
-| GET    | /api/reports/teacher_courses_overview/{teacher_id} | ADMIN | Tổng quan khóa học của giảng viên |
+| Method | Endpoint                                           | Access | Description                            |
+|--------|----------------------------------------------------|--------|----------------------------------------|
+| GET    | /api/reports/top_courses                           | ADMIN  | Most popular courses                   |
+| GET    | /api/reports/student_progress/{student_id}         | ADMIN  | Progress of a specific student         |
+| GET    | /api/reports/teacher_courses_overview/{teacher_id} | ADMIN  | Course overview for a specific teacher |
 
-## Kiểm thử API với Postman
+## Testing with Postman
 
-Dự án được kiểm thử bằng Postman. Để import collection:
+This project has been tested using Postman. To import the collection:
 
-1. Mở Postman, chọn **Import**
-2. Chọn file collection (`.json`) đính kèm trong dự án
-3. Tạo Environment với biến `base_url = http://localhost:8080` và `token` để lưu JWT sau khi đăng nhập
-4. Gọi `POST /api/auth/login` trước để lấy token, sau đó gán vào biến `token` để dùng cho các request cần xác thực (
-   `Authorization: Bearer {{token}}`)
+1. Open Postman and select **Import**
+2. Choose the collection file (`.json`) included in this repository
+3. Create an Environment with a `base_url = http://localhost:8080` variable and a `token` variable to store the JWT
+   after login
+4. Call `POST /api/auth/login` first to obtain a token, then set it as the `token` variable to use in authenticated
+   requests (`Authorization: Bearer {{token}}`)
