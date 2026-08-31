@@ -1,6 +1,7 @@
 package com.tuan.course_management.controller;
 
-import com.tuan.course_management.dto.request.CourseRequest;
+import com.tuan.course_management.dto.request.CourseCreateRequest;
+import com.tuan.course_management.dto.request.CourseUpdateRequest;
 import com.tuan.course_management.dto.request.UpdateCourseStatusRequest;
 import com.tuan.course_management.dto.response.ApiResponse;
 import com.tuan.course_management.dto.response.CourseDetailResponse;
@@ -50,7 +51,7 @@ public class CourseController {
      * Đáp ứng STT 11.
      */
     @GetMapping("/{courseId}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<CourseDetailResponse>> getCourse(
             @PathVariable("courseId") Long courseId) {
         CourseDetailResponse response = courseService.getCourseById(courseId);
@@ -64,7 +65,7 @@ public class CourseController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<CourseResponse>> createCourse(
-            @Valid @RequestBody CourseRequest request) {
+            @Valid @RequestBody CourseCreateRequest request) {
         CourseResponse response = courseService.createCourse(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Tạo khóa học thành công", response));
@@ -78,7 +79,7 @@ public class CourseController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<CourseResponse>> updateCourse(
             @PathVariable("courseId") Long courseId,
-            @Valid @RequestBody CourseRequest request) {
+            @Valid @RequestBody CourseUpdateRequest request) {
         CourseResponse response = courseService.updateCourse(courseId, request);
         return ResponseEntity.ok(ApiResponse.success("Cập nhật khóa học thành công", response));
     }

@@ -1,6 +1,7 @@
 package com.tuan.course_management.service;
 
-import com.tuan.course_management.dto.request.CourseRequest;
+import com.tuan.course_management.dto.request.CourseCreateRequest;
+import com.tuan.course_management.dto.request.CourseUpdateRequest;
 import com.tuan.course_management.dto.request.UpdateCourseStatusRequest;
 import com.tuan.course_management.dto.response.CourseDetailResponse;
 import com.tuan.course_management.dto.response.CourseResponse;
@@ -115,7 +116,7 @@ public class CourseService {
      * Tạo mới khóa học (ADMIN). Trạng thái mặc định là DRAFT.
      */
     @Transactional
-    public CourseResponse createCourse(CourseRequest request) {
+    public CourseResponse createCourse(CourseCreateRequest request) {
         log.debug("Bắt đầu tạo khóa học mới: title={}, teacherId={}", request.getTitle(), request.getTeacherId());
 
         User teacher = userRepository.findById(request.getTeacherId())
@@ -138,7 +139,7 @@ public class CourseService {
      * Cập nhật thông tin khóa học (ADMIN). Tận dụng Dirty Checking.
      */
     @Transactional
-    public CourseResponse updateCourse(Long courseId, CourseRequest request) {
+    public CourseResponse updateCourse(Long courseId, CourseUpdateRequest request) {
         log.debug("Cập nhật thông tin khóa học ID: {}", courseId);
 
         Course course = courseRepository.findById(courseId)

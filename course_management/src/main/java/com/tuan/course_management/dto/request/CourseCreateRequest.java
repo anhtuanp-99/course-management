@@ -13,7 +13,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CourseRequest {
+public class CourseCreateRequest {
 
     @NotBlank(message = "Tiêu đề khóa học không được để trống")
     @Size(max = 200, message = "Tiêu đề không quá 200 ký tự")
