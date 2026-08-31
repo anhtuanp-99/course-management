@@ -17,9 +17,14 @@ import java.util.List;
 public interface CourseRepository extends JpaRepository<Course, Long>, JpaSpecificationExecutor<Course> {
 
     /**
+     * Lấy danh sách khóa học do một giảng viên phụ trách (Phục vụ ReportService - STT 39).
+     */
+    List<Course> findByTeacherId(Long teacherId);
+
+    /**
      * Lấy danh sách khóa học phổ biến nhất dựa trên số lượt đăng ký (Phục vụ API Báo cáo STT 37).
      */
-    @Query("SELECT c FROM Course c LEFT JOIN c.enrollments e GROUP BY c.id ORDER BY COUNT(e.id) DESC")
+    @Query("SELECT c FROM Course c LEFT JOIN c.enrollments e GROUP BY c ORDER BY COUNT(e) DESC")
     List<Course> findTopCourses(Pageable pageable);
 
     /**
