@@ -1,6 +1,7 @@
 package com.tuan.course_management.exception;
 
 import com.tuan.course_management.dto.response.ApiResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mapping.PropertyReferenceException;
@@ -65,10 +66,16 @@ public class GlobalExceptionHandler {
      * Xử lý lỗi phân quyền Spring Security từ annotation @PreAuthorize.
      */
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
-        log.warn("Truy cập bị từ chối: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error(ErrorCode.FORBIDDEN_RESOURCE.getCode(), "Bạn không có quyền thực hiện hành động này"));
+    public ResponseEntity<ApiResponse<Void>> handleAccessDenied(
+            AccessDeniedException ex,
+            HttpServletRequest request) {
+
+        log.warn("Truy cập bị từ chối do không đủ quyền tại URI: {} - Lý do: {}",
+                request.getRequestURI(), ex.getMessage());
+
+        ErrorCode errorCode = ErrorCode.FORBIDDEN_RESOURCE;
+        return ResponseEntity.status(errorCode.getHttpStatus())
+                .body(ApiResponse.error(errorCode.getCode(), errorCode.getMessage()));
     }
 
     /**
