@@ -1,11 +1,13 @@
 package com.tuan.course_management.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
 /**
- * DTO dùng cho ADMIN tạo thông báo.
+ * DTO dùng cho ADMIN tạo thông báo mới.
+ * userId là bắt buộc (thông báo cá nhân).
  */
 @Getter
 @Setter
@@ -20,9 +22,6 @@ public class NotificationRequest {
 
     private String content;
 
-    /**
-     * ID người nhận thông báo.
-     * Nếu null, thông báo sẽ là thông báo chung.
-     */
+    @NotNull(message = "ID người nhận không được để trống")
     private Long userId;
 }
