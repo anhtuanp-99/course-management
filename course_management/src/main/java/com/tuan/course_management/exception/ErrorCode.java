@@ -41,7 +41,7 @@ public enum ErrorCode {
     ENROLLMENT_NOT_FOUND(4001, "Không tìm thấy thông tin đăng ký khóa học", HttpStatus.NOT_FOUND),
     ALREADY_ENROLLED(4002, "Bạn đã đăng ký khóa học này trước đó", HttpStatus.CONFLICT),
     COURSE_NOT_PUBLISHED_FOR_ENROLL(4003, "Khóa học chưa được xuất bản, không thể đăng ký", HttpStatus.BAD_REQUEST),
-    LESSON_ALREADY_COMPLETED(4004, "Bài học đã được đánh dấu hoàn thành", HttpStatus.CONFLICT),
+    LESSON_ALREADY_COMPLETED(4004, "Bài học đã được đánh dấu hoàn thành từ trước", HttpStatus.CONFLICT),
     LESSON_NOT_IN_COURSE(4005, "Bài học không thuộc khóa học đã đăng ký", HttpStatus.BAD_REQUEST),
 
     // ================= NOTIFICATION =================
