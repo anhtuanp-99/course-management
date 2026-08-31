@@ -31,6 +31,7 @@ public class UserController {
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<PageResponse<UserResponse>>> getUsers(
+            @RequestParam(name = "search", required = false) String search,
             @RequestParam(name = "role", required = false) Role role,
             @RequestParam(name = "status", required = false) Boolean isActive,
             @RequestParam(name = "page", defaultValue = "0") int page,
@@ -38,7 +39,7 @@ public class UserController {
             @RequestParam(name = "sortBy", defaultValue = "createdAt") String sortBy,
             @RequestParam(name = "sortDir", defaultValue = "desc") String sortDir) {
 
-        PageResponse<UserResponse> response = userService.getUsers(page, size, sortBy, sortDir, role, isActive);
+        PageResponse<UserResponse> response = userService.getUsers(page, size, sortBy, sortDir, search, role, isActive);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
