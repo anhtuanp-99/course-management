@@ -2,10 +2,9 @@ package com.tuan.course_management.controller;
 
 import com.tuan.course_management.dto.request.CourseCreateRequest;
 import com.tuan.course_management.dto.request.CourseUpdateRequest;
-import com.tuan.course_management.dto.request.UpdateCourseStatusRequest;
 import com.tuan.course_management.dto.response.ApiResponse;
 import com.tuan.course_management.dto.response.CourseDetailResponse;
-import com.tuan.course_management.dto.response.CourseResponse;
+import com.tuan.course_management.dto.response.CourseSummaryResponse;
 import com.tuan.course_management.dto.response.PageResponse;
 import com.tuan.course_management.enums.CourseStatus;
 import com.tuan.course_management.service.CourseService;
@@ -20,38 +19,36 @@ import org.springframework.web.bind.annotation.*;
  * Controller tiếp nhận và xử lý các Endpoint RESTful liên quan đến khóa học.
  */
 @RestController
-@RequestMapping("/api/courses")
+@RequestMapping("/api/v1/courses")
 @RequiredArgsConstructor
 public class CourseController {
 
     private final CourseService courseService;
 
     /**
-     * Lấy danh sách khóa học có phân trang, hỗ trợ tìm kiếm và lọc động (Yêu cầu đã đăng nhập).
-     * Đáp ứng STT 10, 28, 29, 32.
+     * Lấy danh sách khóa học có phân trang, hỗ trợ tìm kiếm và lọc động.
      */
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<PageResponse<CourseResponse>>> getCourses(
+    public ResponseEntity<ApiResponse<PageResponse<CourseSummaryResponse>>> getCourses(
             @RequestParam(name = "search", required = false) String search,
             @RequestParam(name = "teacherId", required = false) Long teacherId,
             @RequestParam(name = "status", required = false) CourseStatus status,
-            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "page", defaultValue = "1") int page,
             @RequestParam(name = "size", defaultValue = "10") int size,
             @RequestParam(name = "sortBy", defaultValue = "createdAt") String sortBy,
             @RequestParam(name = "sortDir", defaultValue = "desc") String sortDir) {
 
-        PageResponse<CourseResponse> response = courseService.getCourses(
+        PageResponse<CourseSummaryResponse> response = courseService.getCourses(
                 page, size, sortBy, sortDir, search, teacherId, status);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     /**
-     * Lấy chi tiết thông tin khóa học kèm danh sách bài học đã xuất bản (Yêu cầu đã đăng nhập).
-     * Đáp ứng STT 11.
+     * Lấy chi tiết thông tin khóa học (Cho phép STUDENT, TEACHER và ADMIN đã đăng nhập).
      */
     @GetMapping("/{courseId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<CourseDetailResponse>> getCourse(
             @PathVariable("courseId") Long courseId) {
         CourseDetailResponse response = courseService.getCourseById(courseId);
@@ -59,53 +56,49 @@ public class CourseController {
     }
 
     /**
-     * Tạo mới một khóa học với trạng thái mặc định DRAFT (Chỉ ADMIN).
-     * Đáp ứng STT 12.
+     * Tạo mới một khóa học (Chỉ ADMIN).
      */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<CourseResponse>> createCourse(
+    public ResponseEntity<ApiResponse<CourseSummaryResponse>> createCourse(
             @Valid @RequestBody CourseCreateRequest request) {
-        CourseResponse response = courseService.createCourse(request);
+        CourseSummaryResponse response = courseService.createCourse(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Tạo khóa học thành công", response));
+                .body(ApiResponse.success(201, "Tạo khóa học thành công", response));
     }
 
     /**
-     * Cập nhật toàn bộ thông tin khóa học (Chỉ ADMIN).
-     * Đáp ứng STT 13.
+     * Cập nhật thông tin khóa học (Chỉ ADMIN).
      */
     @PutMapping("/{courseId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<CourseResponse>> updateCourse(
+    public ResponseEntity<ApiResponse<CourseSummaryResponse>> updateCourse(
             @PathVariable("courseId") Long courseId,
             @Valid @RequestBody CourseUpdateRequest request) {
-        CourseResponse response = courseService.updateCourse(courseId, request);
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật khóa học thành công", response));
+        CourseSummaryResponse response = courseService.updateCourse(courseId, request);
+        return ResponseEntity.ok(ApiResponse.success(200, "Cập nhật khóa học thành công", response));
     }
 
     /**
      * Cập nhật trạng thái hiển thị của khóa học (Chỉ ADMIN).
-     * Đáp ứng STT 14
      */
     @PutMapping("/{courseId}/status")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<CourseResponse>> updateCourseStatus(
+    public ResponseEntity<ApiResponse<CourseSummaryResponse>> updateCourseStatus(
             @PathVariable("courseId") Long courseId,
-            @Valid @RequestBody UpdateCourseStatusRequest request) {
-        CourseResponse response = courseService.updateCourseStatus(courseId, request);
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái thành công", response));
+            @RequestParam("status") CourseStatus status) {
+        CourseSummaryResponse response = courseService.updateCourseStatus(courseId, status);
+        return ResponseEntity.ok(ApiResponse.success(200, "Cập nhật trạng thái thành công", response));
     }
 
     /**
      * Xóa khóa học khỏi hệ thống (Chỉ ADMIN).
-     * Đáp ứng STT 15.
      */
     @DeleteMapping("/{courseId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteCourse(
             @PathVariable("courseId") Long courseId) {
         courseService.deleteCourse(courseId);
-        return ResponseEntity.ok(ApiResponse.success("Xóa khóa học thành công", null));
+        return ResponseEntity.ok(ApiResponse.success(200, "Xóa khóa học thành công", null));
     }
 }

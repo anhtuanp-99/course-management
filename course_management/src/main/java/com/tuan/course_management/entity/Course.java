@@ -6,12 +6,13 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entity quản lý thông tin khóa học trong hệ thống.
+ * Entity lưu thông tin tổng quan về các khóa học và liên kết phụ trách với Giảng viên.
  */
 @Entity
 @Table(
@@ -42,7 +43,7 @@ public class Course {
     private String description;
 
     /**
-     * Giảng viên phụ trách khóa học (Bắt buộc phải có).
+     * Giảng viên phụ trách chính khóa học (Bắt buộc role = TEACHER).
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "teacher_id", nullable = false)
@@ -50,7 +51,20 @@ public class Course {
     private User teacher;
 
     /**
-     * Trạng thái khóa học: DRAFT, PUBLISHED, ARCHIVED.
+     * Giá bán khóa học (Mặc định 0.00).
+     */
+    @Builder.Default
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal price = BigDecimal.ZERO;
+
+    /**
+     * Tổng thời lượng ước tính tính theo giờ.
+     */
+    @Column(name = "duration_hours")
+    private Integer durationHours;
+
+    /**
+     * Trạng thái vòng đời khóa học: DRAFT, PUBLISHED, ARCHIVED.
      */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -58,31 +72,23 @@ public class Course {
     private CourseStatus status = CourseStatus.DRAFT;
 
     @CreationTimestamp
-    @Column(updatable = false)
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
+    @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    /**
-     * Danh sách bài học thuộc khóa học.
-     */
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     @ToString.Exclude
     private List<Lesson> lessons = new ArrayList<>();
 
-    /**
-     * Danh sách đăng ký của học viên vào khóa học.
-     */
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     @ToString.Exclude
     private List<Enrollment> enrollments = new ArrayList<>();
 
-    /**
-     * Danh sách đánh giá khóa học.
-     */
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     @ToString.Exclude
@@ -90,17 +96,11 @@ public class Course {
 
     // ================= HELPER METHODS =================
 
-    /**
-     * Thêm bài học mới và đồng bộ mối quan hệ hai chiều.
-     */
     public void addLesson(Lesson lesson) {
         this.lessons.add(lesson);
         lesson.setCourse(this);
     }
 
-    /**
-     * Xóa bài học khỏi khóa học và đồng bộ mối quan hệ hai chiều.
-     */
     public void removeLesson(Lesson lesson) {
         this.lessons.remove(lesson);
         lesson.setCourse(null);

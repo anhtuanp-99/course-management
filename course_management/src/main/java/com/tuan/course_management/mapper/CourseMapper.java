@@ -1,64 +1,66 @@
 package com.tuan.course_management.mapper;
 
+import com.tuan.course_management.dto.request.CourseCreateRequest;
 import com.tuan.course_management.dto.response.CourseDetailResponse;
-import com.tuan.course_management.dto.response.CourseResponse;
-import com.tuan.course_management.dto.response.LessonResponse;
+import com.tuan.course_management.dto.response.CourseSummaryResponse;
 import com.tuan.course_management.entity.Course;
-import com.tuan.course_management.entity.Lesson;
-import lombok.experimental.UtilityClass;
+import com.tuan.course_management.entity.User;
+import com.tuan.course_management.enums.CourseStatus;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
-import java.util.List;
+import java.math.BigDecimal;
 
-/**
- * Class tiện ích chuyển đổi giữa Entity Course và các DTO phản hồi liên quan.
- */
-@UtilityClass
+@Component
+@RequiredArgsConstructor
 public class CourseMapper {
 
-    /**
-     * Chuyển Course entity sang CourseResponse DTO cơ bản.
-     */
-    public static CourseResponse toResponse(Course course) {
-        if (course == null) {
-            return null;
-        }
+    private final UserMapper userMapper;
 
-        return CourseResponse.builder()
-                .id(course.getId())
-                .title(course.getTitle())
-                .description(course.getDescription())
-                .teacherId(course.getTeacher() != null ? course.getTeacher().getId() : null)
-                .teacherName(course.getTeacher() != null ? course.getTeacher().getFullName() : null)
-                .status(course.getStatus())
-                .createdAt(course.getCreatedAt())
-                .updatedAt(course.getUpdatedAt())
+    public Course toEntity(CourseCreateRequest request, User teacher) {
+        if (request == null) return null;
+
+        return Course.builder()
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .price(request.getPrice() != null ? request.getPrice() : BigDecimal.ZERO)
+                .durationHours(request.getDurationHours())
+                .teacher(teacher)
+                .status(CourseStatus.DRAFT)
                 .build();
     }
 
-    /**
-     * Chuyển Course entity sang CourseDetailResponse DTO kèm danh sách bài học đã xuất bản.
-     */
-    public static CourseDetailResponse toDetailResponse(Course course, List<Lesson> publishedLessons) {
-        if (course == null) {
-            return null;
-        }
+    public CourseSummaryResponse toSummaryResponse(Course entity, Double avgRating, Long totalStudents) {
+        if (entity == null) return null;
 
-        List<LessonResponse> lessonResponses = publishedLessons != null
-                ? publishedLessons.stream()
-                  .map(LessonMapper::toResponse)
-                  .toList()
-                : List.of();
+        return CourseSummaryResponse.builder()
+                .id(entity.getId())
+                .title(entity.getTitle())
+                .price(entity.getPrice())
+                .durationHours(entity.getDurationHours())
+                .status(entity.getStatus())
+                .teacherName(entity.getTeacher() != null ? entity.getTeacher().getFullName() : null)
+                .avgRating(avgRating != null ? avgRating : 0.0)
+                .totalStudents(totalStudents != null ? totalStudents : 0L)
+                .build();
+    }
+
+    public CourseDetailResponse toDetailResponse(Course entity, Double avgRating, Long totalStudents, Long totalLessons) {
+        if (entity == null) return null;
 
         return CourseDetailResponse.builder()
-                .id(course.getId())
-                .title(course.getTitle())
-                .description(course.getDescription())
-                .teacherId(course.getTeacher() != null ? course.getTeacher().getId() : null)
-                .teacherName(course.getTeacher() != null ? course.getTeacher().getFullName() : null)
-                .status(course.getStatus())
-                .createdAt(course.getCreatedAt())
-                .updatedAt(course.getUpdatedAt())
-                .lessons(lessonResponses)
+                .id(entity.getId())
+                .title(entity.getTitle())
+                .description(entity.getDescription())
+                .price(entity.getPrice())
+                .durationHours(entity.getDurationHours())
+                .status(entity.getStatus())
+                .teacher(userMapper.toSummaryResponse(entity.getTeacher()))
+                .avgRating(avgRating != null ? avgRating : 0.0)
+                .totalStudents(totalStudents != null ? totalStudents : 0L)
+                .totalLessons(totalLessons != null ? totalLessons : 0L)
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
                 .build();
     }
 }

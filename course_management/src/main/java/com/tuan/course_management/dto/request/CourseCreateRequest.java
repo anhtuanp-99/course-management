@@ -1,13 +1,10 @@
 package com.tuan.course_management.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.*;
 
-/**
- * DTO dùng khi tạo mới hoặc cập nhật khóa học (ADMIN).
- */
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,10 +18,13 @@ public class CourseCreateRequest {
 
     private String description;
 
-    /**
-     * ID của giảng viên phụ trách khóa học.
-     * Bắt buộc khi tạo mới.
-     */
-    @NotNull(message = "Giảng viên không được để trống")
+    @NotNull(message = "Giá khóa học không được để trống")
+    @DecimalMin(value = "0.0", message = "Giá khóa học phải lớn hơn hoặc bằng 0")
+    private BigDecimal price;
+
+    @Min(value = 1, message = "Thời lượng khóa học phải tối thiểu 1 giờ")
+    private Integer durationHours;
+
+    @NotNull(message = "ID giảng viên phụ trách không được để trống")
     private Long teacherId;
 }
