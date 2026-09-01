@@ -22,6 +22,9 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long>, J
 
     long countByCourseId(Long courseId);
 
+    // Bổ sung hàm đếm tổng số khóa học học viên đăng ký
+    long countByStudentId(Long studentId);
+
     long countByStudentIdAndStatus(Long studentId, EnrollmentStatus status);
 
     boolean existsByStudentIdAndCourseId(Long studentId, Long courseId);
