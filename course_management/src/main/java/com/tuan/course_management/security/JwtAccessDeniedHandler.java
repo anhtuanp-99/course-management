@@ -2,6 +2,7 @@ package com.tuan.course_management.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tuan.course_management.dto.response.ApiResponse;
+import com.tuan.course_management.exception.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -13,9 +14,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-/**
- * JwtAccessDeniedHandler: Xử lý khi người dùng ĐÃ ĐĂNG NHẬP nhưng KHÔNG ĐỦ QUYỀN (HTTP 403 Forbidden).
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -28,13 +26,15 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
                        HttpServletResponse response,
                        AccessDeniedException accessDeniedException) throws IOException {
 
-        log.warn("Truy cập bị từ chối do không đủ quyền: {}", request.getRequestURI());
+        log.warn("Truy cập bị từ chối do không đủ quyền: {} - Reason: {}",
+                request.getRequestURI(), accessDeniedException.getMessage());
 
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
 
-        ApiResponse<Void> apiResponse = ApiResponse.error("Bạn không có quyền thực hiện thao tác này");
+        // Gọi đúng factory method nhận ErrorCode của ApiResponse
+        ApiResponse<Void> apiResponse = ApiResponse.error(ErrorCode.FORBIDDEN_RESOURCE);
 
         objectMapper.writeValue(response.getOutputStream(), apiResponse);
     }

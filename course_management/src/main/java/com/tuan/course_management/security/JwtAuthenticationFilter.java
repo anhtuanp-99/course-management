@@ -47,16 +47,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // Lấy toàn bộ thông tin Claims từ Token mà KHÔNG CẦN TRUY VẤN DATABASE
                 Claims claims = jwtProvider.getClaimsFromToken(token);
                 Long userId = claims.get("userId", Long.class);
+                String username = claims.getSubject(); // subject là username
+                String email = claims.get("email", String.class);
+                String fullName = claims.get("fullName", String.class);
                 String roleStr = claims.get("role", String.class);
-                String email = claims.getSubject();
 
                 // Ánh xạ chuỗi Role từ Claim sang Enum Role
                 Role role = Role.valueOf(roleStr);
 
-                // Khởi tạo UserPrincipal với Enum Role đã refactor
+                // Khởi tạo UserPrincipal với đầy đủ thông tin
                 UserPrincipal userDetails = UserPrincipal.builder()
                         .id(userId)
+                        .username(username)
                         .email(email)
+                        .fullName(fullName)
+                        .password(null) // không cần trong context
                         .role(role)
                         .active(true)
                         .build();

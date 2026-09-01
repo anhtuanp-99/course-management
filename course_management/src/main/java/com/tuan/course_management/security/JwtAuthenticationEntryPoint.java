@@ -2,6 +2,7 @@ package com.tuan.course_management.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tuan.course_management.dto.response.ApiResponse;
+import com.tuan.course_management.exception.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -13,9 +14,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-/**
- * JwtAuthenticationEntryPoint – Xử lý lỗi 401 Unauthorized.
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -28,16 +26,16 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
                          HttpServletResponse response,
                          AuthenticationException authException) throws IOException {
 
-        log.warn("Truy cập trái phép vào: {}", request.getRequestURI());
+        log.warn("Truy cập trái phép vào: {} - Reason: {}",
+                request.getRequestURI(), authException.getMessage());
 
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 
-        // Giữ vững API Contract của toàn hệ thống
-        ApiResponse<Void> apiResponse = ApiResponse.error("Bạn cần đăng nhập để truy cập tài nguyên này");
+        // Gọi đúng factory method nhận ErrorCode của ApiResponse
+        ApiResponse<Void> apiResponse = ApiResponse.error(ErrorCode.UNAUTHORIZED_ACCESS);
 
-        // Ghi trực tiếp ra OutputStream để tối ưu tốc độ
         objectMapper.writeValue(response.getOutputStream(), apiResponse);
     }
 }

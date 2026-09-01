@@ -6,6 +6,7 @@ import com.tuan.course_management.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -23,10 +24,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-/**
- * SecurityConfig: Cấu hình bảo mật tập trung cho toàn bộ hệ thống.
- * Quản lý whitelist endpoint công khai và phân quyền chi tiết kết hợp @PreAuthorize.
- */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -37,17 +34,23 @@ public class SecurityConfig {
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
 
-    // Danh sách Endpoint công khai (Whitelist không yêu cầu Token)
     private static final String[] PUBLIC_ENDPOINTS = {
-            "/api/auth/register",
-            "/api/auth/login",
-            "/api/auth/verify",
+            "/api/v1/auth/**",
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/error"
     };
 
+    private static final String[] PUBLIC_GET_ENDPOINTS = {
+            "/api/v1/courses",
+            "/api/v1/courses/*",
+            "/api/v1/courses/*/lessons",
+            "/api/v1/courses/*/lessons/*",
+            "/api/v1/courses/*/reviews"
+    };
+
+    // BẮT BUỘC CÓ ĐỂ FIX LỖI PASSWORDENCODER
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -70,6 +73,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                        .requestMatchers(HttpMethod.GET, PUBLIC_GET_ENDPOINTS).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -77,9 +81,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /**
-     * Cấu hình CORS cho phép các Frontend Client (React, Vite) truy cập tài nguyên.
-     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();

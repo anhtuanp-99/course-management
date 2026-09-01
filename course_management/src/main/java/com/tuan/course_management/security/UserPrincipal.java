@@ -22,6 +22,7 @@ import java.util.Collections;
 public class UserPrincipal implements UserDetails {
 
     private final Long id;
+    private final String username;
     private final String email;
     private final String fullName;
     private final String password;
@@ -37,6 +38,7 @@ public class UserPrincipal implements UserDetails {
     public static UserPrincipal from(User user) {
         return UserPrincipal.builder()
                 .id(user.getId())
+                .username(user.getUsername())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .password(user.getPassword())
@@ -52,7 +54,7 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public String getUsername() {
-        return email;
+        return username;
     }
 
     @Override
