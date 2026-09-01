@@ -3,7 +3,7 @@ package com.tuan.course_management.controller;
 import com.tuan.course_management.dto.request.LoginRequest;
 import com.tuan.course_management.dto.request.RegisterRequest;
 import com.tuan.course_management.dto.response.ApiResponse;
-import com.tuan.course_management.dto.response.JwtResponse;
+import com.tuan.course_management.dto.response.AuthResponse;
 import com.tuan.course_management.dto.response.UserResponse;
 import com.tuan.course_management.security.UserPrincipal;
 import com.tuan.course_management.service.AuthService;
@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
@@ -33,21 +33,21 @@ public class AuthController {
      * Đăng ký tài khoản người dùng mới. Trả về HTTP Status 201 CREATED.
      */
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequest request) {
-        log.info("Nhận yêu cầu đăng ký tài khoản cho email: {}", request.getEmail());
-        userService.register(request);
+    public ResponseEntity<ApiResponse<UserResponse>> register(@Valid @RequestBody RegisterRequest request) {
+        log.info("Nhận yêu cầu đăng ký tài khoản cho username: {}", request.getUsername());
+        UserResponse response = userService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Đăng ký tài khoản thành công!", null));
+                .body(ApiResponse.success(201, "Đăng ký tài khoản thành công!", response));
     }
 
     /**
      * Đăng nhập hệ thống và nhận chuỗi Authentication Token (STT 1).
      */
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<JwtResponse>> login(@Valid @RequestBody LoginRequest request) {
-        log.info("Nhận yêu cầu đăng nhập cho email: {}", request.getEmail());
-        JwtResponse response = authService.login(request);
-        return ResponseEntity.ok(ApiResponse.success("Đăng nhập thành công", response));
+    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
+        log.info("Nhận yêu cầu đăng nhập cho username: {}", request.getUsername());
+        AuthResponse response = authService.login(request);
+        return ResponseEntity.ok(ApiResponse.success(200, "Đăng nhập thành công", response));
     }
 
     /**
@@ -66,7 +66,7 @@ public class AuthController {
     @PostMapping("/verify")
     public ResponseEntity<ApiResponse<Void>> verify(@RequestParam(name = "token") String token) {
         authService.verify(token);
-        return ResponseEntity.ok(ApiResponse.success("Token hợp lệ", null));
+        return ResponseEntity.ok(ApiResponse.success(200, "Token hợp lệ", null));
     }
 
     /**
@@ -76,6 +76,6 @@ public class AuthController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Void>> logout() {
         authService.logout();
-        return ResponseEntity.ok(ApiResponse.success("Đăng xuất thành công", null));
+        return ResponseEntity.ok(ApiResponse.success(200, "Đăng xuất thành công", null));
     }
 }

@@ -1,7 +1,7 @@
 package com.tuan.course_management.service;
 
 import com.tuan.course_management.dto.request.LoginRequest;
-import com.tuan.course_management.dto.response.JwtResponse;
+import com.tuan.course_management.dto.response.AuthResponse;
 import com.tuan.course_management.dto.response.UserResponse;
 import com.tuan.course_management.entity.User;
 import com.tuan.course_management.exception.AppException;
@@ -30,49 +30,44 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
     /**
-     * Xác thực thông tin tài khoản và cấp phát chuỗi Access Token, Refresh Token.
-     *
-     * @param request Yêu cầu đăng nhập chứa email và mật khẩu
-     * @return JwtResponse DTO chứa thông tin Token và chi tiết người dùng
+     * Xác thực thông tin tài khoản và cấp phát chuỗi Access Token.
      */
-    public JwtResponse login(LoginRequest request) {
-        log.debug("Bắt đầu xác thực đăng nhập cho email: {}", request.getEmail());
+    public AuthResponse login(LoginRequest request) {
+        log.debug("Bắt đầu xác thực đăng nhập cho username: {}", request.getUsername());
 
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
 
         UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
 
         String accessToken = jwtProvider.generateAccessToken(userPrincipal);
-        String refreshToken = jwtProvider.generateRefreshToken(userPrincipal);
 
-        log.info("Đăng nhập thành công cho User ID: {}, Email: {}", userPrincipal.getId(), userPrincipal.getUsername());
+        log.info("Đăng nhập thành công cho User ID: {}, Username: {}", userPrincipal.getId(), userPrincipal.getUsername());
 
-        return JwtResponse.builder()
+        User user = userRepository.findById(userPrincipal.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        return AuthResponse.builder()
                 .accessToken(accessToken)
-                .refreshToken(refreshToken)
                 .tokenType("Bearer")
-                .userId(userPrincipal.getId())
-                .email(userPrincipal.getUsername())
-                .fullName(userPrincipal.getFullName())
-                .role(userPrincipal.getRole().name())
+                .expiresIn(86400)
+                .user(userMapper.toSummaryResponse(user))
                 .build();
     }
 
     /**
      * Kiểm tra tính hợp lệ của Token. Ném exception nếu token bị hỏng hoặc hết hạn.
-     *
-     * @param token Chuỗi JWT Token cần kiểm tra
      */
     public void verify(String token) {
         log.debug("Kiểm tra tính hợp lệ của JWT Token");
 
         if (token == null || token.isBlank() || !jwtProvider.validateToken(token)) {
             log.warn("Token không hợp lệ hoặc đã hết hạn");
-            throw new AppException(ErrorCode.INVALID_TOKEN);
+            throw new AppException(ErrorCode.INVALID_JWT_TOKEN);
         }
 
         log.info("JWT Token hợp lệ");
@@ -80,9 +75,6 @@ public class AuthService {
 
     /**
      * Truy vấn thông tin tài khoản cá nhân của người dùng đang đăng nhập.
-     *
-     * @param userPrincipal Thông tin người dùng đã xác thực từ Security Context
-     * @return UserResponse DTO thông tin tài khoản
      */
     public UserResponse getMe(UserPrincipal userPrincipal) {
         log.debug("Lấy thông tin tài khoản cá nhân cho User ID: {}", userPrincipal.getId());
@@ -91,7 +83,7 @@ public class AuthService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         log.info("Lấy thông tin tài khoản cá nhân thành công cho User ID: {}", user.getId());
-        return UserMapper.toResponse(user);
+        return userMapper.toResponse(user);
     }
 
     /**
