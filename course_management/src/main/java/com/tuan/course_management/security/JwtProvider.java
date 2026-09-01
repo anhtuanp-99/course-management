@@ -50,7 +50,7 @@ public class JwtProvider {
         Date expiryDate = new Date(now.getTime() + expirationMs);
 
         return Jwts.builder()
-                .subject(userPrincipal.getUsername()) // email
+                .subject(userPrincipal.getUsername())
                 .claim("userId", userPrincipal.getId())
                 .claim("role", userPrincipal.getRole())
                 .issuedAt(now)
@@ -60,7 +60,14 @@ public class JwtProvider {
     }
 
     /**
-     * Lấy toàn bộ Claims từ Token (Bắt buộc phải có để Filter bóc tách userId, role mà không gọi DB).
+     * Trả về thời gian hết hạn tính bằng giây (dùng cho AuthResponse.expiresIn)
+     */
+    public long getExpirationInSeconds() {
+        return jwtExpirationMs / 1000;
+    }
+
+    /**
+     * Lấy toàn bộ Claims từ Token.
      */
     public Claims getClaimsFromToken(String token) {
         return jwtParser.parseSignedClaims(token)
@@ -68,10 +75,17 @@ public class JwtProvider {
     }
 
     /**
-     * Lấy email (subject) từ Token.
+     * Lấy Email / Username (subject) từ Token.
      */
     public String getEmailFromToken(String token) {
         return getClaimsFromToken(token).getSubject();
+    }
+
+    /**
+     * Lấy UserId từ Claims.
+     */
+    public Long getUserIdFromToken(String token) {
+        return getClaimsFromToken(token).get("userId", Long.class);
     }
 
     public boolean validateToken(String token) {

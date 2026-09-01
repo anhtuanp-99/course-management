@@ -34,6 +34,7 @@ public class SecurityConfig {
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
 
+    // Danh sách Endpoint công khai
     private static final String[] PUBLIC_ENDPOINTS = {
             "/api/v1/auth/**",
             "/v3/api-docs/**",
@@ -42,6 +43,7 @@ public class SecurityConfig {
             "/error"
     };
 
+    // Danh sách Endpoint GET công khai cấu trúc chi tiết theo SRS
     private static final String[] PUBLIC_GET_ENDPOINTS = {
             "/api/v1/courses",
             "/api/v1/courses/*",
@@ -50,7 +52,6 @@ public class SecurityConfig {
             "/api/v1/courses/*/reviews"
     };
 
-    // BẮT BUỘC CÓ ĐỂ FIX LỖI PASSWORDENCODER
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
