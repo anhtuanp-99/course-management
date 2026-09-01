@@ -1,67 +1,49 @@
 package com.tuan.course_management.mapper;
 
-import com.tuan.course_management.dto.response.EnrollmentDetailResponse;
+import com.tuan.course_management.dto.response.CourseSummaryResponse;
 import com.tuan.course_management.dto.response.EnrollmentResponse;
-import com.tuan.course_management.dto.response.LessonProgressResponse;
+import com.tuan.course_management.dto.response.UserSummaryResponse;
+import com.tuan.course_management.entity.Course;
 import com.tuan.course_management.entity.Enrollment;
-import com.tuan.course_management.entity.LessonProgress;
+import com.tuan.course_management.entity.User;
+import com.tuan.course_management.enums.EnrollmentStatus;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-/**
- * Mapper chuyển đổi giữa entity Enrollment và các DTO liên quan.
- */
+@Component
+@RequiredArgsConstructor
 public class EnrollmentMapper {
 
-    /**
-     * Chuyển Enrollment entity sang EnrollmentResponse.
-     */
-    public static EnrollmentResponse toResponse(Enrollment enrollment) {
-        if (enrollment == null) return null;
+    private final UserMapper userMapper;
+    private final CourseMapper courseMapper;
+
+    public Enrollment toEntity(User student, Course course) {
+        if (student == null || course == null) return null;
+
+        return Enrollment.builder()
+                .student(student)
+                .course(course)
+                .status(EnrollmentStatus.ENROLLED)
+                .progressPercentage(0.00)
+                .build();
+    }
+
+    public EnrollmentResponse toResponse(Enrollment entity, Double avgRating, Long totalStudents) {
+        if (entity == null) return null;
+
+        UserSummaryResponse studentSummary = userMapper.toSummaryResponse(entity.getStudent());
+        CourseSummaryResponse courseSummary = courseMapper.toSummaryResponse(
+                entity.getCourse(), avgRating, totalStudents
+        );
 
         return EnrollmentResponse.builder()
-                .id(enrollment.getId())
-                .studentId(enrollment.getStudent() != null ? enrollment.getStudent().getId() : null)
-                .courseId(enrollment.getCourse() != null ? enrollment.getCourse().getId() : null)
-                .courseTitle(enrollment.getCourse() != null ? enrollment.getCourse().getTitle() : null)
-                .enrolledAt(enrollment.getEnrolledAt())
-                .build();
-    }
-
-    /**
-     * Chuyển Enrollment entity sang EnrollmentDetailResponse (kèm tiến độ bài học).
-     */
-    public static EnrollmentDetailResponse toDetailResponse(Enrollment enrollment, List<LessonProgress> progressList) {
-        if (enrollment == null) return null;
-
-        List<LessonProgressResponse> progressResponses = progressList != null
-                ? progressList.stream()
-                  .map(EnrollmentMapper::toProgressResponse)
-                  .collect(Collectors.toList())
-                : List.of();
-
-        return EnrollmentDetailResponse.builder()
-                .id(enrollment.getId())
-                .studentId(enrollment.getStudent() != null ? enrollment.getStudent().getId() : null)
-                .courseId(enrollment.getCourse() != null ? enrollment.getCourse().getId() : null)
-                .courseTitle(enrollment.getCourse() != null ? enrollment.getCourse().getTitle() : null)
-                .enrolledAt(enrollment.getEnrolledAt())
-                .progress(progressResponses)
-                .build();
-    }
-
-    /**
-     * Chuyển LessonProgress entity sang LessonProgressResponse.
-     */
-    private static LessonProgressResponse toProgressResponse(LessonProgress progress) {
-        if (progress == null) return null;
-
-        return LessonProgressResponse.builder()
-                .lessonId(progress.getLesson() != null ? progress.getLesson().getId() : null)
-                .lessonTitle(progress.getLesson() != null ? progress.getLesson().getTitle() : null)
-                .completed(progress.isCompleted())
-                .completedAt(progress.getCompletedAt())
+                .id(entity.getId())
+                .student(studentSummary)
+                .course(courseSummary)
+                .status(entity.getStatus())
+                .progressPercentage(entity.getProgressPercentage())
+                .enrolledAt(entity.getEnrolledAt())
+                .completionDate(entity.getCompletionDate())
                 .build();
     }
 }

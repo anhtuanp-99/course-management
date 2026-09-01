@@ -1,5 +1,6 @@
 package com.tuan.course_management.entity;
 
+import com.tuan.course_management.enums.EnrollmentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -9,8 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entity ghi nhận thông tin đăng ký khóa học của học viên.
- * Đảm bảo tính duy nhất: Mỗi cặp (student, course) chỉ có một bản ghi.
+ * Entity ghi nhận thông tin đăng ký khóa học của học viên và theo dõi tiến độ tổng quan.
  */
 @Entity
 @Table(
@@ -21,7 +21,8 @@ import java.util.List;
         ),
         indexes = {
                 @Index(name = "idx_enrollments_course_id", columnList = "course_id"),
-                @Index(name = "idx_enrollments_student_id", columnList = "student_id")
+                @Index(name = "idx_enrollments_student_id", columnList = "student_id"),
+                @Index(name = "idx_enrollments_status", columnList = "status")
         }
 )
 @Getter
@@ -39,7 +40,7 @@ public class Enrollment {
     private Long id;
 
     /**
-     * Học viên thực hiện đăng ký (Bắt buộc phải có).
+     * Học viên thực hiện đăng ký (Role = STUDENT).
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "student_id", nullable = false)
@@ -47,7 +48,7 @@ public class Enrollment {
     private User student;
 
     /**
-     * Khóa học được đăng ký (Bắt buộc phải có).
+     * Khóa học được sinh viên đăng ký.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "course_id", nullable = false)
@@ -55,15 +56,33 @@ public class Enrollment {
     private Course course;
 
     /**
-     * Thời điểm đăng ký thành công.
+     * Trạng thái tham gia khóa học (ENROLLED, COMPLETED, DROPPED).
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private EnrollmentStatus status = EnrollmentStatus.ENROLLED;
+
+    /**
+     * Tỷ lệ phần trăm tiến độ hoàn thành khóa học (0.00 - 100.00).
+     */
+    @Builder.Default
+    @Column(name = "progress_percentage", nullable = false)
+    private Double progressPercentage = 0.00;
+
+    /**
+     * Ngày giờ sinh viên đăng ký thành công.
      */
     @CreationTimestamp
-    @Column(updatable = false)
+    @Column(name = "enrollment_date", nullable = false, updatable = false)
     private LocalDateTime enrolledAt;
 
     /**
-     * Danh sách tiến độ học tập các bài học thuộc khóa học này.
+     * Ngày giờ sinh viên hoàn thành tất cả các bài học trong khóa.
      */
+    @Column(name = "completion_date")
+    private LocalDateTime completionDate;
+
     @OneToMany(mappedBy = "enrollment", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     @ToString.Exclude
@@ -71,17 +90,11 @@ public class Enrollment {
 
     // ================= HELPER METHODS =================
 
-    /**
-     * Thêm tiến độ bài học mới và đồng bộ mối quan hệ hai chiều.
-     */
     public void addLessonProgress(LessonProgress progress) {
         this.lessonProgresses.add(progress);
         progress.setEnrollment(this);
     }
 
-    /**
-     * Xóa tiến độ bài học và gỡ bỏ tham chiếu hai chiều.
-     */
     public void removeLessonProgress(LessonProgress progress) {
         this.lessonProgresses.remove(progress);
         progress.setEnrollment(null);

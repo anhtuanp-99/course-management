@@ -1,12 +1,10 @@
 package com.tuan.course_management.dto.response;
 
+import com.tuan.course_management.enums.EnrollmentStatus;
 import lombok.*;
 
 import java.time.LocalDateTime;
 
-/**
- * DTO trả về thông tin đăng ký khóa học.
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -15,8 +13,10 @@ import java.time.LocalDateTime;
 public class EnrollmentResponse {
 
     private Long id;
-    private Long studentId;
-    private Long courseId;
-    private String courseTitle;   // tên khóa học (đã map)
+    private UserSummaryResponse student;
+    private CourseSummaryResponse course;
+    private EnrollmentStatus status;
+    private Double progressPercentage;
     private LocalDateTime enrolledAt;
+    private LocalDateTime completionDate;
 }

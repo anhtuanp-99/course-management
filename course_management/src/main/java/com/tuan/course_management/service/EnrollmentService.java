@@ -1,25 +1,25 @@
 package com.tuan.course_management.service;
 
-import com.tuan.course_management.dto.request.EnrollmentRequest;
-import com.tuan.course_management.dto.response.EnrollmentDetailResponse;
+import com.tuan.course_management.dto.request.EnrollmentCreateRequest;
 import com.tuan.course_management.dto.response.EnrollmentResponse;
+import com.tuan.course_management.dto.response.LessonProgressResponse;
 import com.tuan.course_management.dto.response.PageResponse;
 import com.tuan.course_management.entity.*;
 import com.tuan.course_management.enums.CourseStatus;
+import com.tuan.course_management.enums.EnrollmentStatus;
 import com.tuan.course_management.enums.Role;
 import com.tuan.course_management.exception.AppException;
 import com.tuan.course_management.exception.ErrorCode;
 import com.tuan.course_management.mapper.EnrollmentMapper;
-import com.tuan.course_management.repository.CourseRepository;
-import com.tuan.course_management.repository.EnrollmentRepository;
-import com.tuan.course_management.repository.LessonProgressRepository;
-import com.tuan.course_management.repository.LessonRepository;
+import com.tuan.course_management.mapper.LessonProgressMapper;
+import com.tuan.course_management.repository.*;
 import com.tuan.course_management.security.UserPrincipal;
-import com.tuan.course_management.util.PageUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,14 +40,17 @@ public class EnrollmentService {
     private final CourseRepository courseRepository;
     private final LessonRepository lessonRepository;
     private final LessonProgressRepository lessonProgressRepository;
+    private final ReviewRepository reviewRepository;
     private final UserService userService;
+    private final EnrollmentMapper enrollmentMapper;
+    private final LessonProgressMapper lessonProgressMapper;
 
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
-            "id", "enrolledAt"
+            "id", "enrolledAt", "progressPercentage"
     );
 
     /**
-     * Lấy danh sách các khóa học sinh viên đã đăng ký (Đáp ứng STT 22).
+     * Lấy danh sách các khóa học sinh viên đã đăng ký (STT 22).
      */
     public PageResponse<EnrollmentResponse> getEnrollments(UserPrincipal currentUser,
                                                            int page, int size, String sortBy, String sortDir) {
@@ -55,17 +58,27 @@ public class EnrollmentService {
         log.debug("Lấy danh sách đăng ký cho Student ID: {}", studentId);
 
         String safeSortBy = ALLOWED_SORT_FIELDS.contains(sortBy) ? sortBy : "enrolledAt";
-        Pageable pageable = PageUtils.createPageable(page, size, safeSortBy, sortDir, "enrolledAt");
+        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(safeSortBy).ascending() : Sort.by(safeSortBy).descending();
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size, sort);
 
         Page<Enrollment> enrollmentPage = enrollmentRepository.findByStudentId(studentId, pageable);
-        return PageResponse.from(enrollmentPage.map(EnrollmentMapper::toResponse));
+        List<EnrollmentResponse> mappedContent = enrollmentPage.getContent().stream()
+                .map(enrollment -> {
+                    Long courseId = enrollment.getCourse().getId();
+                    Double avgRating = reviewRepository.calculateAvgRatingByCourseId(courseId);
+                    long totalStudents = enrollmentRepository.countByCourseId(courseId);
+                    return enrollmentMapper.toResponse(enrollment, avgRating, totalStudents);
+                })
+                .toList();
+
+        return PageResponse.from(enrollmentPage, mappedContent);
     }
 
     /**
-     * Đăng ký một khóa học mới (Đáp ứng STT 23).
+     * Đăng ký một khóa học mới (STT 23).
      */
     @Transactional
-    public EnrollmentResponse enroll(EnrollmentRequest request, UserPrincipal currentUser) {
+    public EnrollmentResponse enroll(EnrollmentCreateRequest request, UserPrincipal currentUser) {
         Long studentId = currentUser.getId();
         Long courseId = request.getCourseId();
         log.debug("Student ID {} thực hiện đăng ký Course ID: {}", studentId, courseId);
@@ -83,22 +96,21 @@ public class EnrollmentService {
 
         User student = userService.getUserEntityById(studentId);
 
-        Enrollment enrollment = Enrollment.builder()
-                .student(student)
-                .course(course)
-                .build();
-
+        Enrollment enrollment = enrollmentMapper.toEntity(student, course);
         Enrollment saved = enrollmentRepository.save(enrollment);
-        log.info("Đăng ký khóa học thành công. Enrollment ID: {}", saved.getId());
 
-        return EnrollmentMapper.toResponse(saved);
+        Double avgRating = reviewRepository.calculateAvgRatingByCourseId(courseId);
+        long totalStudents = enrollmentRepository.countByCourseId(courseId);
+
+        log.info("Đăng ký khóa học thành công. Enrollment ID: {}", saved.getId());
+        return enrollmentMapper.toResponse(saved, avgRating, totalStudents);
     }
 
     /**
-     * Lấy chi tiết thông tin đăng ký kèm tiến độ học tập (Đáp ứng STT 24).
+     * Lấy danh sách chi tiết tiến độ các bài học thuộc đợt đăng ký (STT 24).
      */
-    public EnrollmentDetailResponse getEnrollmentDetail(Long enrollmentId, UserPrincipal currentUser) {
-        log.debug("Lấy chi tiết đăng ký ID: {} cho User ID: {}", enrollmentId, currentUser.getId());
+    public List<LessonProgressResponse> getEnrollmentProgress(Long enrollmentId, UserPrincipal currentUser) {
+        log.debug("Lấy danh sách tiến độ bài học của Enrollment ID: {} cho User ID: {}", enrollmentId, currentUser.getId());
 
         Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND));
@@ -106,15 +118,17 @@ public class EnrollmentService {
         checkEnrollmentOwnership(enrollment, currentUser);
 
         List<LessonProgress> progressList = lessonProgressRepository.findByEnrollmentId(enrollmentId);
-
-        return EnrollmentMapper.toDetailResponse(enrollment, progressList);
+        return progressList.stream()
+                .map(lessonProgressMapper::toResponse)
+                .toList();
     }
 
     /**
-     * Đánh dấu hoàn thành một bài học trong khóa học đã đăng ký (Đáp ứng STT 25).
+     * Đánh dấu hoàn thành một bài học trong khóa học (STT 25).
+     * Tự động tính toán lại % tiến độ và cập nhật trạng thái COMPLETED khi học hoàn thành 100%.
      */
     @Transactional
-    public void completeLesson(Long enrollmentId, Long lessonId, UserPrincipal currentUser) {
+    public LessonProgressResponse completeLesson(Long enrollmentId, Long lessonId, UserPrincipal currentUser) {
         log.debug("User ID {} hoàn thành lesson {} trong enrollment {}", currentUser.getId(), lessonId, enrollmentId);
 
         Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
@@ -133,7 +147,6 @@ public class EnrollmentService {
             throw new AppException(ErrorCode.LESSON_NOT_IN_COURSE);
         }
 
-        // Tìm bản ghi tiến độ đã khởi tạo sẵn hoặc tạo đối tượng mới nếu chưa có
         LessonProgress progress = lessonProgressRepository
                 .findByEnrollmentIdAndLessonId(enrollmentId, lessonId)
                 .orElseGet(() -> LessonProgress.builder()
@@ -141,28 +154,45 @@ public class EnrollmentService {
                         .lesson(lesson)
                         .build());
 
-        // Kiểm tra chính xác cờ completed của bản ghi tiến độ
         if (progress.isCompleted()) {
             throw new AppException(ErrorCode.LESSON_ALREADY_COMPLETED);
         }
 
+        LocalDateTime now = LocalDateTime.now();
         progress.setCompleted(true);
-        progress.setCompletedAt(LocalDateTime.now());
+        progress.setCompletedAt(now);
+        progress.setLastAccessedAt(now);
 
-        // Nếu là bản ghi khởi tạo mới thì lưu vào DB, bản ghi cũ tận dụng Dirty Checking
-        if (progress.getId() == null) {
-            lessonProgressRepository.save(progress);
-        }
+        LessonProgress savedProgress = lessonProgressRepository.save(progress);
+
+        // Cập nhật lại % tiến độ và trạng thái hoàn thành khóa học
+        recalculateEnrollmentProgress(enrollment);
 
         log.info("Đánh dấu hoàn thành bài học thành công. Enrollment ID: {}, Lesson ID: {}", enrollmentId, lessonId);
+        return lessonProgressMapper.toResponse(savedProgress);
     }
 
-    // =========================================================================
-    // HELPER METHODS
-    // =========================================================================
+    /**
+     * Helper Method: Tự động tính toán lại % tiến độ học tập dựa trên tổng số bài học đã xuất bản.
+     */
+    private void recalculateEnrollmentProgress(Enrollment enrollment) {
+        long totalPublishedLessons = lessonRepository.countByCourseIdAndPublishedTrue(enrollment.getCourse().getId());
+        long completedLessons = lessonProgressRepository.countByEnrollmentIdAndCompletedTrue(enrollment.getId());
+
+        if (totalPublishedLessons > 0) {
+            double percentage = ((double) completedLessons / totalPublishedLessons) * 100.0;
+            double roundedPercentage = Math.min(100.0, Math.round(percentage * 100.0) / 100.0);
+            enrollment.setProgressPercentage(roundedPercentage);
+
+            if (roundedPercentage >= 100.0 && enrollment.getStatus() != EnrollmentStatus.COMPLETED) {
+                enrollment.setStatus(EnrollmentStatus.COMPLETED);
+                enrollment.setCompletionDate(LocalDateTime.now());
+            }
+        }
+    }
 
     /**
-     * Kiểm tra quyền truy cập thông tin đăng ký: Chỉ chính học viên sở hữu hoặc ADMIN.
+     * Helper Method: Kiểm tra quyền truy cập thông tin đăng ký (Chính chủ học viên hoặc ADMIN).
      */
     private void checkEnrollmentOwnership(Enrollment enrollment, UserPrincipal currentUser) {
         boolean isAdmin = currentUser.getRole() == Role.ADMIN;
