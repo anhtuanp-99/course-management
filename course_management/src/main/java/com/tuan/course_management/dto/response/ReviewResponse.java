@@ -4,9 +4,6 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-/**
- * DTO trả về thông tin đánh giá.
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -15,11 +12,10 @@ import java.time.LocalDateTime;
 public class ReviewResponse {
 
     private Long id;
+    private Long courseId;
+    private UserSummaryResponse student;
     private int rating;
     private String comment;
-    private Long studentId;
-    private String studentName;
-    private Long courseId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

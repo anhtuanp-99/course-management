@@ -14,7 +14,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ReviewRequest {
+public class ReviewCreateRequest {
 
     @NotNull(message = "Số sao đánh giá không được để trống")
     @Min(value = 1, message = "Số sao tối thiểu là 1")
