@@ -17,6 +17,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,7 +37,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ApiResponse<Void>> handleAppException(AppException ex) {
         ErrorCode errorCode = ex.getErrorCode();
-        log.warn("Lỗi nghiệp vụ [{}]: {}", errorCode.getErrorCode(), errorCode.getMessage());
+        // Dùng ex.getMessage() để ghi lại đúng thông điệp thực tế của exception phát sinh
+        log.warn("Lỗi nghiệp vụ [{}]: {}", errorCode.getErrorCode(), ex.getMessage());
 
         return ResponseEntity
                 .status(errorCode.getHttpStatus())
@@ -144,6 +146,7 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(errorCode));
     }
 
+
     /**
      * Xử lý lỗi tham số sắp xếp không tồn tại trong Entity.
      */
@@ -154,6 +157,24 @@ public class GlobalExceptionHandler {
         String message = String.format("Trường sắp xếp '%s' không tồn tại trong hệ thống", ex.getPropertyName());
         return ResponseEntity.status(errorCode.getHttpStatus())
                 .body(ApiResponse.error(errorCode, message));
+    }
+
+    /**
+     * Xử lý lỗi gọi sai đường dẫn API không tồn tại (404 Not Found).
+     */
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoHandlerFound(NoHandlerFoundException ex) {
+        log.warn("Đường dẫn API không tồn tại: {} {}", ex.getHttpMethod(), ex.getRequestURL());
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .success(false)
+                .statusCode(HttpStatus.NOT_FOUND.value())
+                .errorCode("RESOURCE_NOT_FOUND")
+                .message("Đường dẫn API không tồn tại hoặc không đúng định dạng")
+                .timestamp(java.time.LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
     /**
