@@ -1,6 +1,7 @@
 package com.tuan.course_management.service;
 
-import com.tuan.course_management.dto.request.ReviewRequest;
+import com.tuan.course_management.dto.request.ReviewCreateRequest;
+import com.tuan.course_management.dto.request.ReviewUpdateRequest;
 import com.tuan.course_management.dto.response.PageResponse;
 import com.tuan.course_management.dto.response.ReviewResponse;
 import com.tuan.course_management.entity.Course;
@@ -14,18 +15,20 @@ import com.tuan.course_management.repository.CourseRepository;
 import com.tuan.course_management.repository.EnrollmentRepository;
 import com.tuan.course_management.repository.ReviewRepository;
 import com.tuan.course_management.security.UserPrincipal;
-import com.tuan.course_management.util.PageUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Set;
 
 /**
- * Dịch vụ xử lý nghiệp vụ liên quan đến đánh giá khóa học.
+ * Dịch vụ xử lý các nghiệp vụ đánh giá khóa học.
  */
 @Service
 @RequiredArgsConstructor
@@ -37,11 +40,12 @@ public class ReviewService {
     private final CourseRepository courseRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final UserService userService;
+    private final ReviewMapper reviewMapper;
 
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("id", "createdAt", "rating");
 
     /**
-     * Lấy danh sách đánh giá của một khóa học (Đáp ứng STT 40).
+     * Lấy danh sách đánh giá của một khóa học (STT 40).
      */
     public PageResponse<ReviewResponse> getReviewsByCourse(Long courseId, int page, int size, String sortBy, String sortDir) {
         log.debug("Lấy danh sách đánh giá cho Course ID: {}", courseId);
@@ -51,17 +55,22 @@ public class ReviewService {
         }
 
         String safeSortBy = ALLOWED_SORT_FIELDS.contains(sortBy) ? sortBy : "createdAt";
-        Pageable pageable = PageUtils.createPageable(page, size, safeSortBy, sortDir, "createdAt");
+        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(safeSortBy).ascending() : Sort.by(safeSortBy).descending();
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size, sort);
 
         Page<Review> reviewPage = reviewRepository.findByCourseId(courseId, pageable);
-        return PageResponse.from(reviewPage.map(ReviewMapper::toResponse));
+        List<ReviewResponse> mappedContent = reviewPage.getContent().stream()
+                .map(reviewMapper::toResponse)
+                .toList();
+
+        return PageResponse.from(reviewPage, mappedContent);
     }
 
     /**
-     * Gửi đánh giá khóa học (Đáp ứng STT 41) - Chỉ STUDENT đã đăng ký khóa học.
+     * Gửi đánh giá khóa học mới (STT 41) - Chỉ dành cho học viên đã hoàn thành/đăng ký khóa học.
      */
     @Transactional
-    public ReviewResponse createReview(Long courseId, ReviewRequest request, UserPrincipal currentUser) {
+    public ReviewResponse createReview(Long courseId, ReviewCreateRequest request, UserPrincipal currentUser) {
         Long studentId = currentUser.getId();
         log.debug("Student ID {} gửi đánh giá cho Course ID: {}", studentId, courseId);
 
@@ -78,38 +87,36 @@ public class ReviewService {
 
         User student = userService.getUserEntityById(studentId);
 
-        Review review = Review.builder()
-                .rating(request.getRating())
-                .comment(request.getComment())
-                .student(student)
-                .course(course)
-                .build();
-
+        Review review = reviewMapper.toEntity(request, course, student);
         Review saved = reviewRepository.save(review);
         log.info("Tạo đánh giá thành công. Review ID: {}", saved.getId());
 
-        return ReviewMapper.toResponse(saved);
+        return reviewMapper.toResponse(saved);
     }
 
     /**
-     * Cập nhật đánh giá (Đáp ứng STT 42) - Chỉ chính chủ hoặc ADMIN.
+     * Cập nhật đánh giá (STT 42) - Tận dụng JPA Dirty Checking.
      */
     @Transactional
-    public ReviewResponse updateReview(Long reviewId, ReviewRequest request, UserPrincipal currentUser) {
+    public ReviewResponse updateReview(Long reviewId, ReviewUpdateRequest request, UserPrincipal currentUser) {
         log.debug("User ID {} cập nhật đánh giá ID: {}", currentUser.getId(), reviewId);
 
         Review review = getReviewEntityById(reviewId);
         checkReviewOwnership(review, currentUser);
 
-        if (request.getRating() != null) review.setRating(request.getRating());
-        if (request.getComment() != null) review.setComment(request.getComment());
+        if (request.getRating() != null) {
+            review.setRating(request.getRating());
+        }
+        if (request.getComment() != null) {
+            review.setComment(request.getComment().trim());
+        }
 
         log.info("Cập nhật đánh giá thành công. Review ID: {}", review.getId());
-        return ReviewMapper.toResponse(review);
+        return reviewMapper.toResponse(review);
     }
 
     /**
-     * Xóa đánh giá (Đáp ứng STT 43) - Chỉ chính chủ hoặc ADMIN.
+     * Xóa đánh giá khỏi hệ thống (STT 43).
      */
     @Transactional
     public void deleteReview(Long reviewId, UserPrincipal currentUser) {
@@ -137,7 +144,7 @@ public class ReviewService {
 
         if (!isAdmin && !isOwner) {
             log.warn("User ID {} không có quyền thao tác trên Review ID {}", currentUser.getId(), review.getId());
-            throw new AppException(ErrorCode.REVIEW_ACCESS_DENIED);
+            throw new AppException(ErrorCode.FORBIDDEN_RESOURCE);
         }
     }
 }
