@@ -13,9 +13,6 @@ import lombok.*;
 @Builder
 public class LessonCreateRequest {
 
-    @NotNull(message = "ID khóa học không được để trống")
-    private Long courseId;
-
     @NotBlank(message = "Tiêu đề bài học không được để trống")
     @Size(max = 200, message = "Tiêu đề bài học không quá 200 ký tự")
     private String title;
