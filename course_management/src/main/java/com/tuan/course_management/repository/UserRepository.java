@@ -9,12 +9,16 @@ import java.util.Optional;
 
 /**
  * Interface truy xuất dữ liệu người dùng.
- * Tích hợp JpaSpecificationExecutor để hỗ trợ lọc động theo role, status và search (STT 4, 31).
+ * Hỗ trợ các phương thức kiểm tra username, email và lọc động (JpaSpecificationExecutor).
  */
 @Repository
 public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
 
+    Optional<User> findByUsername(String username);
+
     Optional<User> findByEmail(String email);
+
+    boolean existsByUsername(String username);
 
     boolean existsByEmail(String email);
 }

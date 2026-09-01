@@ -7,34 +7,30 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
-/**
- * DTO dùng cho ADMIN tạo mới người dùng.
- */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CreateUserRequest {
+public class UserCreateRequest {
 
-    @NotBlank(message = "Họ tên không được để trống")
-    @Size(max = 100, message = "Họ tên không quá 100 ký tự")
-    private String fullName;
+    @NotBlank(message = "Tên tài khoản không được để trống")
+    @Size(min = 3, max = 50, message = "Tên tài khoản phải từ 3 đến 50 ký tự")
+    private String username;
 
     @NotBlank(message = "Email không được để trống")
     @Email(message = "Email không đúng định dạng")
     private String email;
 
     @NotBlank(message = "Mật khẩu không được để trống")
-    @Size(min = 6, message = "Mật khẩu tối thiểu 6 ký tự")
+    @Size(min = 6, message = "Mật khẩu phải có tối thiểu 6 ký tự")
     private String password;
 
-    @NotNull(message = "Vai trò không được để trống")
+    @NotBlank(message = "Họ và tên không được để trống")
+    private String fullName;
+
+    @NotNull(message = "Vai trò người dùng không được để trống")
     private Role role;
 
-    // Nếu không truyền isActive, mặc định true
-    private Boolean active = true;
-
-    @Size(max = 20, message = "Số điện thoại không quá 20 ký tự")
     private String phone;
 }

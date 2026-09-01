@@ -5,9 +5,6 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-/**
- * DTO trả về thông tin người dùng an toàn (không bao gồm password).
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -16,11 +13,17 @@ import java.time.LocalDateTime;
 public class UserResponse {
 
     private Long id;
-    private String fullName;
+    private String username;
     private String email;
-    private String phone;
+    private String fullName;
     private Role role;
+    private String phone;
+
+    /**
+     * Dùng primitive boolean cho Response hiển thị trạng thái bắt buộc của User.
+     */
     private boolean active;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

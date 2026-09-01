@@ -1,6 +1,9 @@
 package com.tuan.course_management.service;
 
-import com.tuan.course_management.dto.request.*;
+import com.tuan.course_management.dto.request.ChangePasswordRequest;
+import com.tuan.course_management.dto.request.RegisterRequest;
+import com.tuan.course_management.dto.request.UserCreateRequest;
+import com.tuan.course_management.dto.request.UserUpdateRequest;
 import com.tuan.course_management.dto.response.PageResponse;
 import com.tuan.course_management.dto.response.UserResponse;
 import com.tuan.course_management.entity.User;
@@ -9,12 +12,13 @@ import com.tuan.course_management.exception.AppException;
 import com.tuan.course_management.exception.ErrorCode;
 import com.tuan.course_management.mapper.UserMapper;
 import com.tuan.course_management.repository.UserRepository;
-import com.tuan.course_management.util.PageUtils;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,33 +39,33 @@ import java.util.Set;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
 
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
-            "id", "fullName", "email", "role", "active", "createdAt"
+            "id", "username", "fullName", "email", "role", "active", "createdAt"
     );
 
     /**
      * Đăng ký tài khoản người dùng mới (Mặc định vai trò STUDENT).
      */
     @Transactional
-    public void register(RegisterRequest request) {
-        log.debug("Bắt đầu đăng ký tài khoản mới cho email: {}", request.getEmail());
+    public UserResponse register(RegisterRequest request) {
+        log.debug("Bắt đầu đăng ký tài khoản mới cho username: {}", request.getUsername());
 
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new AppException(ErrorCode.USERNAME_ALREADY_EXISTS);
+        }
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
-        User user = User.builder()
-                .fullName(request.getFullName())
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole() != null ? request.getRole() : Role.STUDENT)
-                .active(true)
-                .build();
+        User user = userMapper.toEntity(request);
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         User savedUser = userRepository.save(user);
         log.info("Đăng ký tài khoản thành công cho User ID: {}", savedUser.getId());
+        return userMapper.toResponse(savedUser);
     }
 
     /**
@@ -73,15 +77,17 @@ public class UserService {
                 page, size, search, role, isActive);
 
         String safeSortBy = ALLOWED_SORT_FIELDS.contains(sortBy) ? sortBy : "createdAt";
-        Pageable pageable = PageUtils.createPageable(page, size, safeSortBy, sortDir, "createdAt");
+        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(safeSortBy).ascending() : Sort.by(safeSortBy).descending();
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size, sort);
 
         Specification<User> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            // 1. Tìm kiếm theo từ khóa (fullName hoặc email)
+            // 1. Tìm kiếm theo từ khóa (username, fullName hoặc email)
             if (StringUtils.hasText(search)) {
                 String keyword = "%" + search.toLowerCase().trim() + "%";
                 predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("username")), keyword),
                         cb.like(cb.lower(root.get("fullName")), keyword),
                         cb.like(cb.lower(root.get("email")), keyword)
                 ));
@@ -101,7 +107,11 @@ public class UserService {
         };
 
         Page<User> userPage = userRepository.findAll(spec, pageable);
-        return PageResponse.from(userPage.map(UserMapper::toResponse));
+        List<UserResponse> mappedContent = userPage.getContent().stream()
+                .map(userMapper::toResponse)
+                .toList();
+
+        return PageResponse.from(userPage, mappedContent);
     }
 
     /**
@@ -110,55 +120,53 @@ public class UserService {
     public UserResponse getUserById(Long userId) {
         log.debug("Truy vấn thông tin người dùng cho User ID: {}", userId);
         User user = getUserEntityById(userId);
-        return UserMapper.toResponse(user);
+        return userMapper.toResponse(user);
     }
 
     /**
      * Khởi tạo tài khoản người dùng mới từ màn hình ADMIN (Đáp ứng STT 6).
      */
     @Transactional
-    public UserResponse createUser(CreateUserRequest request) {
-        log.debug("ADMIN tạo tài khoản mới cho email: {}", request.getEmail());
+    public UserResponse createUser(UserCreateRequest request) {
+        log.debug("ADMIN tạo tài khoản mới cho username: {}", request.getUsername());
 
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new AppException(ErrorCode.USERNAME_ALREADY_EXISTS);
+        }
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
-        User user = User.builder()
-                .fullName(request.getFullName())
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole())
-                .phone(request.getPhone())
-                .active(request.getActive() != null ? request.getActive() : true)
-                .build();
+        User user = userMapper.toEntity(request);
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         User savedUser = userRepository.save(user);
         log.info("ADMIN tạo người dùng thành công cho User ID: {}", savedUser.getId());
 
-        return UserMapper.toResponse(savedUser);
+        return userMapper.toResponse(savedUser);
     }
 
     /**
      * Cập nhật thông tin hồ sơ người dùng (Đáp ứng STT 26). Tận dụng JPA Dirty Checking.
      */
     @Transactional
-    public UserResponse updateUser(Long userId, UpdateUserRequest request) {
+    public UserResponse updateUser(Long userId, UserUpdateRequest request) {
         log.debug("Thực hiện cập nhật thông tin hồ sơ cho User ID: {}", userId);
 
         User user = getUserEntityById(userId);
 
-        if (request.getFullName() != null) user.setFullName(request.getFullName());
-        if (request.getEmail() != null && !request.getEmail().equalsIgnoreCase(user.getEmail())) {
-            if (userRepository.existsByEmail(request.getEmail())) {
-                throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
-            }
-            user.setEmail(request.getEmail());
+        if (request.getFullName() != null && !request.getFullName().isBlank()) {
+            user.setFullName(request.getFullName().trim());
         }
-        if (request.getPhone() != null) user.setPhone(request.getPhone());
+        if (request.getPhone() != null) {
+            user.setPhone(request.getPhone().trim());
+        }
+        if (request.getActive() != null) {
+            user.setActive(request.getActive());
+        }
 
         log.info("Cập nhật thông tin hồ sơ thành công cho User ID: {}", user.getId());
-        return UserMapper.toResponse(user);
+        return userMapper.toResponse(user);
     }
 
     /**
@@ -166,7 +174,7 @@ public class UserService {
      * Quy tắc nghiệp vụ: ADMIN không được phép cập nhật vai trò của chính mình và của ADMIN khác.
      */
     @Transactional
-    public UserResponse updateUserRole(Long userId, UpdateRoleRequest request, Long currentAdminId) {
+    public UserResponse updateUserRole(Long userId, Role newRole, Long currentAdminId) {
         log.debug("Thao tác thay đổi vai trò User ID: {} bởi Admin ID: {}", userId, currentAdminId);
 
         User targetUser = getUserEntityById(userId);
@@ -179,25 +187,25 @@ public class UserService {
             }
         }
 
-        targetUser.setRole(request.getRole());
+        targetUser.setRole(newRole);
         log.info("Cập nhật vai trò thành công cho User ID: {}, Role mới: {}", targetUser.getId(), targetUser.getRole());
 
-        return UserMapper.toResponse(targetUser);
+        return userMapper.toResponse(targetUser);
     }
 
     /**
      * Kích hoạt hoặc vô hiệu hóa tài khoản người dùng (Đáp ứng STT 8).
      */
     @Transactional
-    public UserResponse updateUserStatus(Long userId, UpdateStatusRequest request) {
+    public UserResponse updateUserStatus(Long userId, boolean active) {
         log.debug("Thay đổi trạng thái hoạt động cho User ID: {}", userId);
 
         User user = getUserEntityById(userId);
 
-        user.setActive(request.getActive());
+        user.setActive(active);
         log.info("Cập nhật trạng thái thành công cho User ID: {}, Active: {}", user.getId(), user.isActive());
 
-        return UserMapper.toResponse(user);
+        return userMapper.toResponse(user);
     }
 
     /**
@@ -235,18 +243,11 @@ public class UserService {
     // HELPER METHODS (Dùng nội bộ và chia sẻ liên Service)
     // =========================================================================
 
-    /**
-     * Helper Method: Lấy Entity User theo ID, tự động throw AppException nếu không tồn tại.
-     */
     public User getUserEntityById(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
     }
 
-    /**
-     * Helper Method: Lấy Entity User và validate chắc chắn có vai trò TEACHER.
-     * Dùng cho CourseService/LessonService khi gán giảng viên phụ trách.
-     */
     public User getTeacherEntityById(Long teacherId) {
         User teacher = getUserEntityById(teacherId);
         if (teacher.getRole() != Role.TEACHER) {

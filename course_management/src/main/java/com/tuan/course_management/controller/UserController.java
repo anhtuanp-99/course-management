@@ -1,6 +1,8 @@
 package com.tuan.course_management.controller;
 
-import com.tuan.course_management.dto.request.*;
+import com.tuan.course_management.dto.request.ChangePasswordRequest;
+import com.tuan.course_management.dto.request.UserCreateRequest;
+import com.tuan.course_management.dto.request.UserUpdateRequest;
 import com.tuan.course_management.dto.response.ApiResponse;
 import com.tuan.course_management.dto.response.PageResponse;
 import com.tuan.course_management.dto.response.UserResponse;
@@ -19,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
  * Controller tiếp nhận và xử lý các Endpoint RESTful liên quan đến quản lý người dùng.
  */
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 public class UserController {
 
@@ -34,7 +36,7 @@ public class UserController {
             @RequestParam(name = "search", required = false) String search,
             @RequestParam(name = "role", required = false) Role role,
             @RequestParam(name = "status", required = false) Boolean isActive,
-            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "page", defaultValue = "1") int page,
             @RequestParam(name = "size", defaultValue = "10") int size,
             @RequestParam(name = "sortBy", defaultValue = "createdAt") String sortBy,
             @RequestParam(name = "sortDir", defaultValue = "desc") String sortDir) {
@@ -45,7 +47,6 @@ public class UserController {
 
     /**
      * Lấy thông tin chi tiết một người dùng (Chỉ ADMIN).
-     * Đáp ứng STT 5.
      */
     @GetMapping("/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -61,25 +62,24 @@ public class UserController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> createUser(
-            @Valid @RequestBody CreateUserRequest request) {
+            @Valid @RequestBody UserCreateRequest request) {
         UserResponse response = userService.createUser(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Tạo người dùng thành công", response));
+                .body(ApiResponse.success(201, "Tạo người dùng thành công", response));
     }
 
     /**
      * Cập nhật vai trò (role) của người dùng (Chỉ ADMIN).
-     * Ràng buộc: ADMIN không được phép sửa role của ADMIN khác hoặc của chính mình.
      */
     @PutMapping("/{userId}/role")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> updateUserRole(
             @PathVariable("userId") Long userId,
-            @Valid @RequestBody UpdateRoleRequest request,
+            @RequestParam Role role,
             @AuthenticationPrincipal UserPrincipal currentAdmin) {
 
-        UserResponse response = userService.updateUserRole(userId, request, currentAdmin.getId());
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật role thành công", response));
+        UserResponse response = userService.updateUserRole(userId, role, currentAdmin.getId());
+        return ResponseEntity.ok(ApiResponse.success(200, "Cập nhật role thành công", response));
     }
 
     /**
@@ -89,10 +89,10 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> updateUserStatus(
             @PathVariable("userId") Long userId,
-            @Valid @RequestBody UpdateStatusRequest request) {
+            @RequestParam boolean active) {
 
-        UserResponse response = userService.updateUserStatus(userId, request);
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái thành công", response));
+        UserResponse response = userService.updateUserStatus(userId, active);
+        return ResponseEntity.ok(ApiResponse.success(200, "Cập nhật trạng thái thành công", response));
     }
 
     /**
@@ -102,10 +102,10 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
     public ResponseEntity<ApiResponse<UserResponse>> updateUser(
             @PathVariable("userId") Long userId,
-            @Valid @RequestBody UpdateUserRequest request) {
+            @Valid @RequestBody UserUpdateRequest request) {
 
         UserResponse response = userService.updateUser(userId, request);
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật hồ sơ thành công", response));
+        return ResponseEntity.ok(ApiResponse.success(200, "Cập nhật hồ sơ thành công", response));
     }
 
     /**
@@ -118,7 +118,7 @@ public class UserController {
             @Valid @RequestBody ChangePasswordRequest request) {
 
         userService.changePassword(userId, request);
-        return ResponseEntity.ok(ApiResponse.success("Đổi mật khẩu thành công", null));
+        return ResponseEntity.ok(ApiResponse.success(200, "Đổi mật khẩu thành công", null));
     }
 
     /**
@@ -129,6 +129,6 @@ public class UserController {
     public ResponseEntity<ApiResponse<Void>> deleteUser(
             @PathVariable("userId") Long userId) {
         userService.deleteUser(userId);
-        return ResponseEntity.ok(ApiResponse.success("Xóa người dùng thành công", null));
+        return ResponseEntity.ok(ApiResponse.success(200, "Xóa người dùng thành công", null));
     }
 }

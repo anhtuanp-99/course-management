@@ -1,32 +1,67 @@
 package com.tuan.course_management.mapper;
 
+import com.tuan.course_management.dto.request.RegisterRequest;
+import com.tuan.course_management.dto.request.UserCreateRequest;
 import com.tuan.course_management.dto.response.UserResponse;
+import com.tuan.course_management.dto.response.UserSummaryResponse;
 import com.tuan.course_management.entity.User;
-import lombok.experimental.UtilityClass;
+import com.tuan.course_management.enums.Role;
+import org.springframework.stereotype.Component;
 
-/**
- * Class tiện ích chuyển đổi giữa Entity User và UserResponse DTO.
- */
-@UtilityClass
+@Component
 public class UserMapper {
 
-    /**
-     * Chuyển từ User entity sang UserResponse DTO.
-     */
-    public static UserResponse toResponse(User user) {
-        if (user == null) {
-            return null;
-        }
+    public User toEntity(RegisterRequest request) {
+        if (request == null) return null;
+
+        return User.builder()
+                .username(request.getUsername())
+                .email(request.getEmail())
+                .fullName(request.getFullName())
+                .phone(request.getPhone())
+                .role(Role.STUDENT)
+                .active(true)
+                .build();
+    }
+
+    public User toEntity(UserCreateRequest request) {
+        if (request == null) return null;
+
+        return User.builder()
+                .username(request.getUsername())
+                .email(request.getEmail())
+                .fullName(request.getFullName())
+                .role(request.getRole() != null ? request.getRole() : Role.STUDENT)
+                .phone(request.getPhone())
+                .active(true)
+                .build();
+    }
+
+    public UserResponse toResponse(User entity) {
+        if (entity == null) return null;
 
         return UserResponse.builder()
-                .id(user.getId())
-                .fullName(user.getFullName())
-                .email(user.getEmail())
-                .phone(user.getPhone())
-                .role(user.getRole())
-                .active(user.isActive())
-                .createdAt(user.getCreatedAt())
-                .updatedAt(user.getUpdatedAt())
+                .id(entity.getId())
+                .username(entity.getUsername())
+                .email(entity.getEmail())
+                .fullName(entity.getFullName())
+                .role(entity.getRole())
+                .phone(entity.getPhone())
+                .active(entity.isActive())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .build();
+    }
+
+    public UserSummaryResponse toSummaryResponse(User entity) {
+        if (entity == null) return null;
+
+        return UserSummaryResponse.builder()
+                .id(entity.getId())
+                .username(entity.getUsername())
+                .fullName(entity.getFullName())
+                .email(entity.getEmail())
+                .role(entity.getRole())
                 .build();
     }
 }
