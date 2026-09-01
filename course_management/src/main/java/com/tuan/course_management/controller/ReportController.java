@@ -1,9 +1,6 @@
 package com.tuan.course_management.controller;
 
-import com.tuan.course_management.dto.response.ApiResponse;
-import com.tuan.course_management.dto.response.CourseSummaryResponse;
-import com.tuan.course_management.dto.response.PageResponse;
-import com.tuan.course_management.dto.response.TeacherReportResponse;
+import com.tuan.course_management.dto.response.*;
 import com.tuan.course_management.service.ReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +25,16 @@ public class ReportController {
 
         PageResponse<CourseSummaryResponse> response = reportService.getTopCourses(page, size);
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+
+    @GetMapping("/student-progress/{studentId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER') or authentication.principal.id == #studentId")
+    public ResponseEntity<ApiResponse<StudentProgressReportResponse>> getStudentProgress(
+            @PathVariable Long studentId) {
+
+        StudentProgressReportResponse data = reportService.getStudentProgressReport(studentId);
+        return ResponseEntity.ok(ApiResponse.success(200, "Lấy báo cáo tiến độ học tập thành công", data));
     }
 
     /**
