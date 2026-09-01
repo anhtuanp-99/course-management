@@ -1,26 +1,37 @@
 package com.tuan.course_management.mapper;
 
+import com.tuan.course_management.dto.request.NotificationCreateRequest;
 import com.tuan.course_management.dto.response.NotificationResponse;
 import com.tuan.course_management.entity.Notification;
+import com.tuan.course_management.entity.User;
+import org.springframework.stereotype.Component;
 
-/**
- * Mapper chuyển đổi giữa entity Notification và NotificationResponse DTO.
- */
+@Component
 public class NotificationMapper {
 
-    /**
-     * Chuyển Notification entity sang NotificationResponse.
-     */
-    public static NotificationResponse toResponse(Notification notification) {
-        if (notification == null) return null;
+    public Notification toEntity(NotificationCreateRequest request, User user) {
+        if (request == null || user == null) return null;
+
+        return Notification.builder()
+                .user(user)
+                .message(request.getMessage())
+                .type(request.getType())
+                .targetUrl(request.getTargetUrl())
+                .read(false)
+                .build();
+    }
+
+    public NotificationResponse toResponse(Notification entity) {
+        if (entity == null) return null;
 
         return NotificationResponse.builder()
-                .id(notification.getId())
-                .title(notification.getTitle())
-                .content(notification.getContent())
-                .userId(notification.getUser() != null ? notification.getUser().getId() : null)
-                .read(notification.isRead())
-                .createdAt(notification.getCreatedAt())
+                .id(entity.getId())
+                .userId(entity.getUser() != null ? entity.getUser().getId() : null)
+                .message(entity.getMessage())
+                .type(entity.getType())
+                .targetUrl(entity.getTargetUrl())
+                .read(entity.isRead())
+                .createdAt(entity.getCreatedAt())
                 .build();
     }
 }

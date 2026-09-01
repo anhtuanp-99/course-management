@@ -4,9 +4,6 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-/**
- * DTO trả về thông tin thông báo.
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -15,9 +12,10 @@ import java.time.LocalDateTime;
 public class NotificationResponse {
 
     private Long id;
-    private String title;
-    private String content;
-    private Long userId;       // null nếu là thông báo chung
+    private Long userId;
+    private String message;
+    private String type;
+    private String targetUrl;
     private boolean read;
     private LocalDateTime createdAt;
 }

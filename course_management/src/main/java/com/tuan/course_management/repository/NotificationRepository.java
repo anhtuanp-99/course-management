@@ -8,18 +8,23 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 /**
- * Repository thao tác với bảng notifications.
+ * Repository thao tác với dữ liệu thông báo hệ thống.
  */
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, Long>, JpaSpecificationExecutor<Notification> {
 
     /**
-     * Lấy danh sách thông báo của một người dùng, có phân trang.
+     * Lấy tất cả thông báo của một người dùng, có phân trang.
      */
     Page<Notification> findByUserId(Long userId, Pageable pageable);
 
     /**
-     * Lấy danh sách thông báo chung (không gắn user cụ thể), có phân trang.
+     * Lấy danh sách thông báo chưa đọc của người dùng.
      */
-    Page<Notification> findByUserIsNull(Pageable pageable);
+    Page<Notification> findByUserIdAndReadFalse(Long userId, Pageable pageable);
+
+    /**
+     * Đếm số lượng thông báo chưa đọc của người dùng (Phục vụ hiển thị Badge UI).
+     */
+    long countByUserIdAndReadFalse(Long userId);
 }

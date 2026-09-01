@@ -3,20 +3,18 @@ package com.tuan.course_management.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
 /**
- * Entity quản lý thông tin thông báo trong hệ thống.
- * Hỗ trợ cả thông báo cá nhân (gán user_id) và thông báo chung (user_id = null).
+ * Entity lưu trữ các thông điệp, sự kiện hệ thống tạo tự động hoặc do Admin gửi tới người dùng.
  */
 @Entity
 @Table(
         name = "notifications",
         indexes = {
                 @Index(name = "idx_notifications_user_id", columnList = "user_id"),
-                @Index(name = "idx_notifications_user_read", columnList = "user_id, is_read")
+                @Index(name = "idx_notifications_user_read", columnList = "user_id, read")
         }
 )
 @Getter
@@ -34,53 +32,45 @@ public class Notification {
     private Long id;
 
     /**
-     * Tiêu đề thông báo.
+     * Người dùng nhận thông báo.
      */
-    @Column(nullable = false, length = 200)
-    private String title;
-
-    /**
-     * Nội dung thông báo.
-     */
-    @Column(columnDefinition = "TEXT")
-    private String content;
-
-    /**
-     * Người nhận thông báo (null nếu là thông báo chung cho toàn hệ thống).
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
     @ToString.Exclude
     private User user;
+
+    /**
+     * Nội dung chi tiết thông báo.
+     */
+    @Column(columnDefinition = "TEXT", nullable = false)
+    private String message;
+
+    /**
+     * Phân loại sự kiện (VD: NEW_COURSE, LESSON_UPDATED, ENROLLMENT_CONFIRMED).
+     */
+    @Column(length = 50)
+    private String type;
+
+    /**
+     * Đường dẫn điều hướng liên quan khi người dùng nhấp vào thông báo.
+     */
+    @Column(name = "target_url", length = 255)
+    private String targetUrl;
 
     /**
      * Trạng thái đã đọc: true = đã đọc, false = chưa đọc.
      */
     @Builder.Default
-    @Column(name = "is_read", nullable = false)
+    @Column(nullable = false)
     private boolean read = false;
 
-    /**
-     * Thời điểm đọc thông báo (null nếu chưa đọc).
-     */
-    private LocalDateTime readAt;
-
     @CreationTimestamp
-    @Column(updatable = false)
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
 
     // ================= DOMAIN BUSINESS METHODS =================
 
-    /**
-     * Đánh dấu thông báo đã đọc và tự động lưu lại thời điểm.
-     */
     public void markAsRead() {
-        if (!this.read) {
-            this.read = true;
-            this.readAt = LocalDateTime.now();
-        }
+        this.read = true;
     }
 }
