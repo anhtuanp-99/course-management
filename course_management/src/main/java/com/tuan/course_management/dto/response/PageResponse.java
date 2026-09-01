@@ -6,8 +6,9 @@ import org.springframework.data.domain.Page;
 import java.util.List;
 
 /**
- * DTO chứa dữ liệu phân trang.
- * Dùng chung cho tất cả API trả về danh sách có phân trang.
+ * Wrapper đóng gói dữ liệu phân trang chuẩn hóa cho toàn bộ API hệ thống.
+ *
+ * @param <T> Kiểu dữ liệu của danh sách phần tử trong trang
  */
 @Getter
 @Setter
@@ -16,24 +17,24 @@ import java.util.List;
 @Builder
 public class PageResponse<T> {
 
-    private List<T> content;      // Danh sách dữ liệu trang hiện tại
-    private int page;            // Số trang hiện tại (0-based)
-    private int size;            // Kích thước trang
-    private long totalElements;  // Tổng số phần tử
-    private int totalPages;      // Tổng số trang
-    private boolean last;        // Có phải trang cuối không
+    private List<T> content;
+    private int pageNo;
+    private int pageSize;
+    private long totalElements;
+    private int totalPages;
+    private boolean last;
 
     /**
-     * Chuyển đổi từ đối tượng Page của Spring Data sang PageResponse.
+     * Helper method tạo PageResponse từ Spring Data Page và danh sách DTO đã map.
      */
-    public static <T> PageResponse<T> from(Page<T> pageData) {
+    public static <T> PageResponse<T> from(Page<?> page, List<T> mappedContent) {
         return PageResponse.<T>builder()
-                .content(pageData.getContent())
-                .page(pageData.getNumber())
-                .size(pageData.getSize())
-                .totalElements(pageData.getTotalElements())
-                .totalPages(pageData.getTotalPages())
-                .last(pageData.isLast())
+                .content(mappedContent)
+                .pageNo(page.getNumber() + 1)
+                .pageSize(page.getSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .last(page.isLast())
                 .build();
     }
 }
