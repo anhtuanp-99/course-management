@@ -30,12 +30,9 @@ public class UserPrincipal implements UserDetails {
     private final boolean active;
 
     /**
-     * Khởi tạo đối tượng UserPrincipal từ Entity User.
-     *
-     * @param user Entity người dùng
-     * @return UserPrincipal Đối tượng chứa thông tin xác thực
+     * Factory method tạo UserPrincipal từ Entity User.
      */
-    public static UserPrincipal from(User user) {
+    public static UserPrincipal create(User user) {
         return UserPrincipal.builder()
                 .id(user.getId())
                 .username(user.getUsername())
@@ -47,9 +44,23 @@ public class UserPrincipal implements UserDetails {
                 .build();
     }
 
+    /**
+     * Tương thích với đặt tên from(user) nếu cần.
+     */
+    public static UserPrincipal from(User user) {
+        return create(user);
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singletonList(new SimpleGrantedAuthority(role.getAuthority()));
+        // Đảm bảo tiền tố ROLE_ để hoạt động đúng với @PreAuthorize("hasRole('ADMIN')")
+        String roleName = role.name().startsWith("ROLE_") ? role.name() : "ROLE_" + role.name();
+        return Collections.singletonList(new SimpleGrantedAuthority(roleName));
+    }
+
+    @Override
+    public String getPassword() {
+        return password;
     }
 
     @Override
