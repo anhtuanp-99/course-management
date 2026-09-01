@@ -1,10 +1,14 @@
 package com.tuan.course_management.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.tuan.course_management.exception.ErrorCode;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 /**
- * Class đóng gói cấu trúc phản hồi chuẩn cho toàn bộ API hệ thống.
+ * Class đóng gói cấu trúc phản hồi chuẩn (Envelope Response) cho toàn bộ REST API hệ thống.
+ * Đáp ứng 100% tài liệu đặc tả SRS Section 6.1.
  *
  * @param <T> Kiểu dữ liệu của phần dữ liệu phản hồi (Payload)
  */
@@ -16,54 +20,68 @@ import lombok.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiResponse<T> {
 
-    @Builder.Default
-    private int code = 1000;
     private boolean success;
+    private int statusCode;
+    private String errorCode;
     private String message;
     private T data;
+    private Object errors;
 
-    /**
-     * Tạo response thành công với dữ liệu trả về.
-     */
+    @Builder.Default
+    private LocalDateTime timestamp = LocalDateTime.now();
+
+    // ================= FACTORY METHODS CHO THÀNH CÔNG =================
+
     public static <T> ApiResponse<T> success(T data) {
         return ApiResponse.<T>builder()
-                .code(1000)
                 .success(true)
+                .statusCode(200)
+                .message("Thao tác thành công")
                 .data(data)
+                .timestamp(LocalDateTime.now())
                 .build();
     }
 
-    /**
-     * Tạo response thành công với thông điệp và dữ liệu trả về.
-     */
-    public static <T> ApiResponse<T> success(String message, T data) {
+    public static <T> ApiResponse<T> success(int statusCode, String message, T data) {
         return ApiResponse.<T>builder()
-                .code(1000)
                 .success(true)
+                .statusCode(statusCode)
                 .message(message)
                 .data(data)
+                .timestamp(LocalDateTime.now())
                 .build();
     }
 
-    /**
-     * Tạo response thất bại mặc định với thông điệp lỗi (Code mặc định 9999).
-     */
-    public static <T> ApiResponse<T> error(String message) {
+    // ================= FACTORY METHODS CHO THẤT BẠI / LỖI =================
+
+    public static <T> ApiResponse<T> error(ErrorCode errorCode) {
         return ApiResponse.<T>builder()
-                .code(9999)
                 .success(false)
-                .message(message)
+                .statusCode(errorCode.getHttpStatus().value())
+                .errorCode(errorCode.getErrorCode())
+                .message(errorCode.getMessage())
+                .timestamp(LocalDateTime.now())
                 .build();
     }
 
-    /**
-     * Tạo response thất bại với mã lỗi định danh (Custom Error Code) và thông điệp lỗi.
-     */
-    public static <T> ApiResponse<T> error(int code, String message) {
+    public static <T> ApiResponse<T> error(ErrorCode errorCode, String customMessage) {
         return ApiResponse.<T>builder()
-                .code(code)
                 .success(false)
-                .message(message)
+                .statusCode(errorCode.getHttpStatus().value())
+                .errorCode(errorCode.getErrorCode())
+                .message(customMessage)
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    public static <T> ApiResponse<T> error(ErrorCode errorCode, Object errors) {
+        return ApiResponse.<T>builder()
+                .success(false)
+                .statusCode(errorCode.getHttpStatus().value())
+                .errorCode(errorCode.getErrorCode())
+                .message(errorCode.getMessage())
+                .errors(errors)
+                .timestamp(LocalDateTime.now())
                 .build();
     }
 }
