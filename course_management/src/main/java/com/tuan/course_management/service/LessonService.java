@@ -1,7 +1,9 @@
 package com.tuan.course_management.service;
 
-import com.tuan.course_management.dto.request.LessonRequest;
+import com.tuan.course_management.dto.request.LessonCreateRequest;
+import com.tuan.course_management.dto.request.LessonUpdateRequest;
 import com.tuan.course_management.dto.response.LessonResponse;
+import com.tuan.course_management.dto.response.LessonSummaryResponse;
 import com.tuan.course_management.dto.response.PageResponse;
 import com.tuan.course_management.entity.Course;
 import com.tuan.course_management.entity.Lesson;
@@ -12,18 +14,20 @@ import com.tuan.course_management.mapper.LessonMapper;
 import com.tuan.course_management.repository.CourseRepository;
 import com.tuan.course_management.repository.LessonRepository;
 import com.tuan.course_management.security.UserPrincipal;
-import com.tuan.course_management.util.PageUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Set;
 
 /**
- * Dịch vụ xử lý nghiệp vụ liên quan đến bài học.
+ * Dịch vụ xử lý các nghiệp vụ quản lý bài học trong khóa học.
  */
 @Service
 @RequiredArgsConstructor
@@ -33,49 +37,56 @@ public class LessonService {
 
     private final LessonRepository lessonRepository;
     private final CourseRepository courseRepository;
+    private final LessonMapper lessonMapper;
 
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
-            "id", "title", "published", "createdAt"
+            "id", "title", "orderIndex", "published", "createdAt"
     );
 
     /**
-     * Lấy danh sách bài học đã xuất bản của một khóa học (Đáp ứng STT 16).
+     * Lấy danh sách bài học đã xuất bản của một khóa học có phân trang (STT 16).
      */
-    public PageResponse<LessonResponse> getPublishedLessons(Long courseId, int page, int size, String sortBy, String sortDir) {
+    public PageResponse<LessonSummaryResponse> getPublishedLessons(Long courseId, int page, int size, String sortBy, String sortDir) {
         log.debug("Lấy danh sách bài học đã xuất bản cho Course ID: {}", courseId);
 
         if (!courseRepository.existsById(courseId)) {
             throw new AppException(ErrorCode.COURSE_NOT_FOUND);
         }
 
-        String safeSortBy = ALLOWED_SORT_FIELDS.contains(sortBy) ? sortBy : "createdAt";
-        Pageable pageable = PageUtils.createPageable(page, size, safeSortBy, sortDir, "createdAt");
-        Page<Lesson> lessonPage = lessonRepository.findByCourseIdAndPublishedTrue(courseId, pageable);
+        String safeSortBy = ALLOWED_SORT_FIELDS.contains(sortBy) ? sortBy : "orderIndex";
+        Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(safeSortBy).descending() : Sort.by(safeSortBy).ascending();
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), size, sort);
 
-        return PageResponse.from(lessonPage.map(LessonMapper::toResponse));
+        Page<Lesson> lessonPage = lessonRepository.findByCourseIdAndPublishedTrueOrderByOrderIndexAsc(courseId, pageable);
+        List<LessonSummaryResponse> mappedContent = lessonPage.getContent().stream()
+                .map(lessonMapper::toSummaryResponse)
+                .toList();
+
+        return PageResponse.from(lessonPage, mappedContent);
     }
 
     /**
-     * Lấy chi tiết thông tin một bài học đã xuất bản (Đáp ứng STT 17).
+     * Lấy chi tiết thông tin bài học (STT 17).
+     * Phân quyền: Học viên chỉ xem được bài học đã xuất bản, Giảng viên sở hữu / ADMIN xem được cả bài học nháp.
      */
-    public LessonResponse getLessonById(Long lessonId) {
-        log.debug("Lấy chi tiết bài học ID: {}", lessonId);
+    public LessonResponse getLessonById(Long lessonId, UserPrincipal currentUser) {
+        log.debug("Lấy chi tiết bài học ID: {} bởi User ID: {}", lessonId, currentUser.getId());
 
         Lesson lesson = getLessonEntityById(lessonId);
 
         if (!lesson.isPublished()) {
-            throw new AppException(ErrorCode.LESSON_NOT_PUBLISHED);
+            checkCourseOwnership(lesson.getCourse(), currentUser);
         }
 
-        return LessonMapper.toResponse(lesson);
+        return lessonMapper.toResponse(lesson);
     }
 
     /**
-     * Thêm bài học mới vào khóa học (Đáp ứng STT 18).
-     * Yêu cầu: ADMIN hoặc TEACHER phụ trách khóa học.
+     * Thêm bài học mới vào khóa học (STT 18).
+     * Yêu cầu: ADMIN hoặc TEACHER trực tiếp phụ trách khóa học.
      */
     @Transactional
-    public LessonResponse createLesson(Long courseId, LessonRequest request, UserPrincipal currentUser) {
+    public LessonResponse createLesson(Long courseId, LessonCreateRequest request, UserPrincipal currentUser) {
         log.debug("Thêm bài học mới vào Course ID: {} bởi User ID: {}", courseId, currentUser.getId());
 
         Course course = courseRepository.findById(courseId)
@@ -83,38 +94,45 @@ public class LessonService {
 
         checkCourseOwnership(course, currentUser);
 
-        Lesson lesson = Lesson.builder()
-                .title(request.getTitle())
-                .content(request.getContent())
-                .course(course)
-                .published(false)
-                .build();
-
+        Lesson lesson = lessonMapper.toEntity(request, course);
         Lesson savedLesson = lessonRepository.save(lesson);
-        log.info("Tạo bài học thành công. Lesson ID: {}", savedLesson.getId());
 
-        return LessonMapper.toResponse(savedLesson);
+        log.info("Tạo bài học thành công. Lesson ID: {}", savedLesson.getId());
+        return lessonMapper.toResponse(savedLesson);
     }
 
     /**
-     * Cập nhật bài học (Đáp ứng STT 19).
+     * Cập nhật thông tin bài học (STT 19). Tận dụng JPA Dirty Checking.
      */
     @Transactional
-    public LessonResponse updateLesson(Long lessonId, LessonRequest request, UserPrincipal currentUser) {
+    public LessonResponse updateLesson(Long lessonId, LessonUpdateRequest request, UserPrincipal currentUser) {
         log.debug("Cập nhật bài học ID: {} bởi User ID: {}", lessonId, currentUser.getId());
 
         Lesson lesson = getLessonEntityById(lessonId);
         checkCourseOwnership(lesson.getCourse(), currentUser);
 
-        if (request.getTitle() != null) lesson.setTitle(request.getTitle());
-        if (request.getContent() != null) lesson.setContent(request.getContent());
+        if (request.getTitle() != null && !request.getTitle().isBlank()) {
+            lesson.setTitle(request.getTitle().trim());
+        }
+        if (request.getContentUrl() != null) {
+            lesson.setContentUrl(request.getContentUrl().trim());
+        }
+        if (request.getTextContent() != null) {
+            lesson.setTextContent(request.getTextContent().trim());
+        }
+        if (request.getOrderIndex() != null) {
+            lesson.setOrderIndex(request.getOrderIndex());
+        }
+        if (request.getPublished() != null) {
+            lesson.setPublished(request.getPublished());
+        }
 
         log.info("Cập nhật bài học thành công. Lesson ID: {}", lesson.getId());
-        return LessonMapper.toResponse(lesson);
+        return lessonMapper.toResponse(lesson);
     }
 
     /**
-     * Xuất bản (Publish) bài học (Đáp ứng STT 20).
+     * Xuất bản (Publish) bài học (STT 20).
      */
     @Transactional
     public LessonResponse publishLesson(Long lessonId, UserPrincipal currentUser) {
@@ -128,12 +146,13 @@ public class LessonService {
         }
 
         lesson.setPublished(true);
-        log.info("Bài học đã được publish. Lesson ID: {}", lesson.getId());
-        return LessonMapper.toResponse(lesson);
+        log.info("Bài học đã được xuất bản thành công. Lesson ID: {}", lesson.getId());
+
+        return lessonMapper.toResponse(lesson);
     }
 
     /**
-     * Xóa bài học khỏi hệ thống (Đáp ứng STT 21).
+     * Xóa bài học khỏi hệ thống (STT 21).
      */
     @Transactional
     public void deleteLesson(Long lessonId, UserPrincipal currentUser) {
@@ -147,7 +166,7 @@ public class LessonService {
     }
 
     /**
-     * Xem trước nội dung rút gọn của bài học (Đáp ứng STT 44).
+     * Xem trước nội dung rút gọn của bài học (STT 44).
      */
     public LessonResponse getContentPreview(Long lessonId) {
         log.debug("Xem trước nội dung bài học ID: {}", lessonId);
@@ -158,13 +177,14 @@ public class LessonService {
             throw new AppException(ErrorCode.LESSON_NOT_PUBLISHED);
         }
 
-        String rawContent = lesson.getContent();
-        String preview = (rawContent != null)
-                ? rawContent.substring(0, Math.min(rawContent.length(), 100)) + "..."
-                : "";
+        String rawContent = lesson.getTextContent();
+        String preview = (rawContent != null && rawContent.length() > 100)
+                ? rawContent.substring(0, 100) + "..."
+                : rawContent;
 
-        LessonResponse response = LessonMapper.toResponse(lesson);
-        response.setContent(preview);
+        LessonResponse response = lessonMapper.toResponse(lesson);
+        response.setTextContent(preview);
+
         return response;
     }
 
@@ -172,17 +192,11 @@ public class LessonService {
     // HELPER METHODS
     // =========================================================================
 
-    /**
-     * Truy vấn Entity Lesson theo ID, ném Exception nếu không tìm thấy.
-     */
     public Lesson getLessonEntityById(Long lessonId) {
         return lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new AppException(ErrorCode.LESSON_NOT_FOUND));
     }
 
-    /**
-     * Kiểm tra quyền sở hữu khóa học: Chỉ ADMIN hoặc TEACHER trực tiếp phụ trách khóa học.
-     */
     private void checkCourseOwnership(Course course, UserPrincipal currentUser) {
         boolean isAdmin = currentUser.getRole() == Role.ADMIN;
         boolean isOwnerTeacher = course.getTeacher() != null && course.getTeacher().getId().equals(currentUser.getId());

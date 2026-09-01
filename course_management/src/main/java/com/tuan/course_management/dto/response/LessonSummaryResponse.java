@@ -2,22 +2,15 @@ package com.tuan.course_management.dto.response;
 
 import lombok.*;
 
-import java.time.LocalDateTime;
-
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class LessonResponse {
+public class LessonSummaryResponse {
 
     private Long id;
-    private Long courseId;
     private String title;
-    private String contentUrl;
-    private String textContent;
     private Integer orderIndex;
     private boolean published;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }

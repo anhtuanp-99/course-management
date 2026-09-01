@@ -8,18 +8,17 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Interface thao tác dữ liệu tiến độ bài học (LessonProgress).
+ * Interface thao tác dữ liệu tiến độ bài học.
  */
 @Repository
 public interface LessonProgressRepository extends JpaRepository<LessonProgress, Long> {
 
-    /**
-     * Lấy danh sách tiến độ bài học thuộc đợt đăng ký (STT 24).
-     */
     List<LessonProgress> findByEnrollmentId(Long enrollmentId);
 
-    /**
-     * Tìm thông tin tiến độ của một bài học cụ thể trong đợt đăng ký (STT 25).
-     */
     Optional<LessonProgress> findByEnrollmentIdAndLessonId(Long enrollmentId, Long lessonId);
+
+    /**
+     * Đếm tổng số bài học sinh viên đã hoàn thành trong lượt đăng ký (Phục vụ tính progress_percentage).
+     */
+    long countByEnrollmentIdAndCompletedTrue(Long enrollmentId);
 }

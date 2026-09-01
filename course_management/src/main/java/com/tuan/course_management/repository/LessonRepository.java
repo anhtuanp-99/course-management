@@ -14,18 +14,14 @@ import java.util.List;
 @Repository
 public interface LessonRepository extends JpaRepository<Lesson, Long> {
 
-    /**
-     * Lấy danh sách bài học đã xuất bản của một khóa học (STT 11, 16).
-     */
-    Page<Lesson> findByCourseIdAndPublishedTrue(Long courseId, Pageable pageable);
+    Page<Lesson> findByCourseIdAndPublishedTrueOrderByOrderIndexAsc(Long courseId, Pageable pageable);
 
-    /**
-     * Lấy toàn bộ bài học thuộc một khóa học dành cho Giảng viên / ADMIN (STT 16).
-     */
-    List<Lesson> findByCourseId(Long courseId);
+    List<Lesson> findByCourseIdOrderByOrderIndexAsc(Long courseId);
 
-    /**
-     * Đếm tổng số bài học của một khóa học.
-     */
     long countByCourseId(Long courseId);
+
+    /**
+     * Đếm tổng số bài học đã xuất bản trong khóa học (Phục vụ tính progress_percentage).
+     */
+    long countByCourseIdAndPublishedTrue(Long courseId);
 }

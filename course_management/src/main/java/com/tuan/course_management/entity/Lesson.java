@@ -10,14 +10,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entity quản lý thông tin bài học thuộc khóa học trong hệ thống.
+ * Entity quản lý danh mục bài học và nội dung giảng dạy trong khóa học.
  */
 @Entity
 @Table(
         name = "lessons",
         indexes = {
                 @Index(name = "idx_lessons_course_id", columnList = "course_id"),
-                @Index(name = "idx_lessons_course_published", columnList = "course_id, published")
+                @Index(name = "idx_lessons_course_published", columnList = "course_id, published"),
+                @Index(name = "idx_lessons_order_index", columnList = "course_id, order_index")
         }
 )
 @Getter
@@ -38,36 +39,46 @@ public class Lesson {
     private String title;
 
     /**
-     * Nội dung chi tiết bài học.
+     * Đường dẫn URL tài liệu đính kèm, video bài giảng hoặc slide.
      */
-    @Column(columnDefinition = "TEXT")
-    private String content;
+    @Column(name = "content_url", length = 255)
+    private String contentUrl;
 
     /**
-     * Trạng thái xuất bản: true = đã xuất bản, false = bản nháp.
+     * Nội dung bài học dạng văn bản chi tiết hoặc hướng dẫn.
+     */
+    @Column(name = "text_content", columnDefinition = "TEXT")
+    private String textContent;
+
+    /**
+     * Thứ tự sắp xếp hiển thị của bài học trong khóa học.
+     */
+    @Column(name = "order_index", nullable = false)
+    private Integer orderIndex;
+
+    /**
+     * Trạng thái xuất bản: true = hiển thị tới sinh viên, false = bản nháp.
      */
     @Builder.Default
     @Column(nullable = false)
     private boolean published = false;
 
     @CreationTimestamp
-    @Column(updatable = false)
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
+    @Column(nullable = false)
     private LocalDateTime updatedAt;
 
     /**
-     * Khóa học chứa bài học này (Bắt buộc phải có).
+     * Khóa học chứa bài học này.
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "course_id", nullable = false)
     @ToString.Exclude
     private Course course;
 
-    /**
-     * Danh sách tiến độ học tập của học viên đối với bài học này.
-     */
     @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     @ToString.Exclude
@@ -75,17 +86,11 @@ public class Lesson {
 
     // ================= HELPER METHODS =================
 
-    /**
-     * Thêm tiến độ bài học mới và đồng bộ mối quan hệ hai chiều.
-     */
     public void addLessonProgress(LessonProgress progress) {
         this.lessonProgresses.add(progress);
         progress.setLesson(this);
     }
 
-    /**
-     * Xóa tiến độ bài học và gỡ bỏ tham chiếu hai chiều.
-     */
     public void removeLessonProgress(LessonProgress progress) {
         this.lessonProgresses.remove(progress);
         progress.setLesson(null);
