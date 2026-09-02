@@ -20,6 +20,7 @@
 - [Installation & Running](#installation--running)
 - [Configuration](#configuration)
 - [API Endpoints](#api-endpoints)
+- [Technical Notes & Principles Applied](#technical-notes--principles-applied)
 - [Testing](#testing)
 - [Documentation](#documentation)
 - [Notes](#notes)
@@ -137,6 +138,41 @@ All APIs are prefixed with `/api/v1`.
 
 > Detailed per-endpoint documentation (methods, request/response bodies) should ideally be added via Swagger/OpenAPI or a Postman collection for easier reference.
 
+## Technical Notes & Principles Applied
+
+### Database Indexing
+
+Entities are indexed on columns frequently used for joins or filtering, to speed up queries:
+
+| Table | Index | Purpose |
+|-------|-------|---------|
+| `users` | `idx_users_username` | Speeds up login lookups |
+| `courses` | `idx_courses_teacher_id` | Speeds up filtering courses by teacher |
+| `lessons` | `idx_lessons_course_id` | Speeds up fetching lessons by course |
+| `notifications` | `idx_notifications_user_id` | Speeds up fetching notifications by user |
+
+Key business constraints are also enforced at the database level via `@UniqueConstraint` (not just validated in the service layer):
+
+- `enrollments`: `UNIQUE(student_id, course_id)` — a student can enroll in a course only once
+- `lesson_progress`: `UNIQUE(enrollment_id, lesson_id)` — one progress record per lesson per enrollment
+- `reviews`: `UNIQUE(course_id, student_id)` — a student can review a course only once
+
+### Transaction Management (ACID)
+
+Services use Spring's `@Transactional` to ensure data integrity:
+
+- `@Transactional(readOnly = true)` on read methods (better performance, avoids unnecessary locking)
+- `@Transactional` on write/update methods — ensures **Atomicity**: if a multi-step DB write (e.g. enrolling in a course + initializing progress records) fails partway through, everything rolls back instead of leaving data in an inconsistent state
+
+### SOLID — and a deliberate trade-off
+
+The project applies SOLID principles partially:
+
+- **Single Responsibility**: clear separation by layer — Controller (handles requests) / Service (business logic) / Repository (DB queries) / Mapper (Entity ↔ DTO conversion)
+- **Dependency Injection**: constructor injection via `@RequiredArgsConstructor` (Lombok) instead of field injection (`@Autowired`), for easier testing and clearer code
+
+**A deliberate gap:** services (`CourseService`, `UserService`, etc.) don't currently have separate interfaces (e.g. `ICourseService` + `CourseServiceImpl`) — meaning the **Dependency Inversion Principle (DIP)** isn't fully applied. This was a considered trade-off for a solo development phase: each service has only one implementation, and adding interfaces at this stage would mainly add boilerplate without real benefit yet. Interfaces may be introduced later if more thorough unit testing (cleaner mocking via interfaces) or multiple implementations of a service become necessary.
+
 ## Testing
 
 ```bash
@@ -153,4 +189,4 @@ The `docs/` folder contains:
 
 ## Notes
 
-This is a learning repository, intended for personal practice rage...).
+This is a learning project, built to practice designing and implementing a complete backend system following RESTful architecture.
