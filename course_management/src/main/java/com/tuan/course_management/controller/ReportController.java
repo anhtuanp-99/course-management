@@ -28,6 +28,12 @@ public class ReportController {
     }
 
 
+    /**
+     * Lấy báo cáo thống kê tiến độ học tập chi tiết của học viên.
+     *
+     * @param studentId ID của học viên cần xuất báo cáo
+     * @return ApiResponse chứa dữ liệu tiến độ (tổng khóa học, hoàn thành, tỷ lệ %)
+     */
     @GetMapping("/student-progress/{studentId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER') or authentication.principal.id == #studentId")
     public ResponseEntity<ApiResponse<StudentProgressReportResponse>> getStudentProgress(
