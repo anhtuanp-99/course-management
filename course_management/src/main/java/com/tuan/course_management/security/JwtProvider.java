@@ -37,27 +37,41 @@ public class JwtProvider {
         this.jwtParser = Jwts.parser().verifyWith(this.secretKey).build();
     }
 
+    /**
+     * Tạo Access Token: Dùng để gọi API, chứa đầy đủ thông tin phân quyền.
+     */
     public String generateAccessToken(UserPrincipal userPrincipal) {
-        return generateToken(userPrincipal, jwtExpirationMs);
-    }
-
-    public String generateRefreshToken(UserPrincipal userPrincipal) {
-        return generateToken(userPrincipal, refreshExpirationMs);
-    }
-
-    private String generateToken(UserPrincipal userPrincipal, long expirationMs) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expirationMs);
+        Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
 
         return Jwts.builder()
                 .subject(userPrincipal.getUsername())
                 .claim("userId", userPrincipal.getId())
                 .claim("role", userPrincipal.getRole())
+                .claim("type", "ACCESS") // Đánh dấu loại Token
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(secretKey)
                 .compact();
     }
+
+    /**
+     * Tạo Refresh Token: Chỉ dùng để xin cấp lại Access Token mới.
+     */
+    public String generateRefreshToken(UserPrincipal userPrincipal) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + refreshExpirationMs);
+
+        return Jwts.builder()
+                .subject(userPrincipal.getUsername())
+                .claim("userId", userPrincipal.getId())
+                .claim("type", "REFRESH") // Đánh dấu rõ ràng là REFRESH
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(secretKey)
+                .compact();
+    }
+
 
     /**
      * Trả về thời gian hết hạn tính bằng giây (dùng cho AuthResponse.expiresIn)
