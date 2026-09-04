@@ -178,6 +178,26 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Xử lý lỗi vi phạm ràng buộc dữ liệu toàn vẹn trong Database (ví dụ: Foreign Key Constraint khi xóa).
+     */
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(
+            org.springframework.dao.DataIntegrityViolationException ex) {
+
+        log.warn("Không thể thao tác dữ liệu do vướng ràng buộc quan hệ Database: {}", ex.getMessage());
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .success(false)
+                .statusCode(HttpStatus.CONFLICT.value()) // HTTP 409 Conflict
+                .errorCode("DATA_INTEGRITY_VIOLATION")
+                .message("Không thể xóa hoặc thay đổi dữ liệu này vì đang có các dữ liệu liên quan khác trong hệ thống")
+                .timestamp(java.time.LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    /**
      * Lưới hứng cuối cùng cho các lỗi hệ thống chưa được phân loại (500).
      */
     @ExceptionHandler(Exception.class)
