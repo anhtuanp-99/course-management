@@ -31,12 +31,10 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @ToString
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Enrollment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @EqualsAndHashCode.Include
     private Long id;
 
     /**
@@ -83,7 +81,7 @@ public class Enrollment {
     @Column(name = "completion_date")
     private LocalDateTime completionDate;
 
-    @OneToMany(mappedBy = "enrollment", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "enrollment", fetch = FetchType.LAZY)
     @Builder.Default
     @ToString.Exclude
     private List<LessonProgress> lessonProgresses = new ArrayList<>();

@@ -59,6 +59,7 @@ public class ReportService {
         return PageResponse.from(coursePage, mappedContent);
     }
 
+    // STT 38
     public StudentProgressReportResponse getStudentProgressReport(Long studentId) {
         // 1. Kiểm tra học viên có tồn tại hay không
         User student = userRepository.findById(studentId)
